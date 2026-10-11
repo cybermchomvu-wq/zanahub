@@ -3,8 +3,9 @@ import { createPortal } from 'react-dom';
 import { X, Eye, EyeOff, ShieldCheck, ArrowRight } from 'lucide-react';
 import GoogleSignIn from './GoogleSignIn';
 
-const API_BASE =
-  `${window.location.protocol}//${window.location.hostname}:3001`;
+const API_BASE = (
+  import.meta.env.VITE_API_URL || 'https://zanahub-api.onrender.com'
+).replace(/\/$/, '');
 
 export default function AuthPanel() {
   const [open, setOpen] = useState(false);

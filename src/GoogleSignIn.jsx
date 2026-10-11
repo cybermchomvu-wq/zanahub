@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 
-const API_BASE =
-  `${window.location.protocol}//${window.location.hostname}:3001`;
+const API_BASE = (
+  import.meta.env.VITE_API_URL || 'https://zanahub-api.onrender.com'
+).replace(/\/$/, '');
 
 export default function GoogleSignIn() {
   const buttonRef = useRef(null);
