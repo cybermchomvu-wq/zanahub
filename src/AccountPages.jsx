@@ -128,8 +128,9 @@ export function ProDashboard({ subscription, loading, error, onBack }) {
     setCheckoutMessage('');
 
     try {
-      const apiBase =
-        `${window.location.protocol}//${window.location.hostname}:3001`;
+      const apiBase = (
+        import.meta.env.VITE_API_URL || 'https://zanahub-api.onrender.com'
+      ).replace(/\/$/, '');
 
       const response = await fetch(`${apiBase}/api/payments/checkout`, {
         method: 'POST',
