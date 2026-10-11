@@ -1,0 +1,320 @@
+.summarizer-page {
+  width: 100%;
+  max-width: 1050px;
+  margin: 0 auto;
+  padding-bottom: 40px;
+  color: #f5f3ff;
+}
+
+.summarizer-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 28px;
+  padding: 10px 14px;
+  border: 1px solid rgba(167, 139, 250, 0.2);
+  border-radius: 12px;
+  background: rgba(139, 92, 246, 0.07);
+  color: #c4b5fd;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.summarizer-back:hover {
+  background: rgba(139, 92, 246, 0.16);
+}
+
+.summarizer-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.summarizer-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 66px;
+  height: 66px;
+  border: 1px solid rgba(167, 139, 250, 0.3);
+  border-radius: 20px;
+  background: linear-gradient(
+    135deg,
+    rgba(139, 92, 246, 0.25),
+    rgba(34, 211, 238, 0.1)
+  );
+  color: #c4b5fd;
+}
+
+.summarizer-eyebrow {
+  margin: 0 0 8px;
+  color: #a78bfa;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+}
+
+.summarizer-header h1 {
+  margin: 0 0 8px;
+  font-size: clamp(1.7rem, 4vw, 2.5rem);
+  letter-spacing: -1px;
+}
+
+.summarizer-header > div:last-child > p:last-child {
+  margin: 0;
+  color: #a5a0bc;
+  line-height: 1.6;
+}
+
+.summarizer-panel {
+  padding: clamp(18px, 4vw, 32px);
+  border: 1px solid rgba(167, 139, 250, 0.2);
+  border-radius: 22px;
+  background: rgba(19, 17, 36, 0.75);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.14);
+}
+
+.summarizer-section-heading,
+.summarizer-result-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.summarizer-section-heading {
+  margin-bottom: 18px;
+}
+
+.summarizer-section-heading h2,
+.summarizer-result-heading h2 {
+  margin: 0 0 7px;
+  font-size: 1.2rem;
+}
+
+.summarizer-section-heading p {
+  margin: 0;
+  color: #a5a0bc;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.summarizer-clear,
+.summarizer-copy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 13px;
+  border: 1px solid rgba(167, 139, 250, 0.22);
+  border-radius: 10px;
+  background: rgba(139, 92, 246, 0.08);
+  color: #ddd6fe;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.summarizer-clear:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.summarizer-panel textarea {
+  display: block;
+  width: 100%;
+  min-height: 190px;
+  padding: 17px;
+  resize: vertical;
+  border: 1px solid rgba(167, 139, 250, 0.22);
+  border-radius: 14px;
+  outline: none;
+  background: rgba(8, 7, 20, 0.65);
+  color: #f5f3ff;
+  font: inherit;
+  line-height: 1.7;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease;
+}
+
+.summarizer-panel textarea:focus {
+  border-color: #a78bfa;
+}
+
+.summarizer-panel textarea::placeholder {
+  color: #77718f;
+}
+
+.summarizer-input-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin: 9px 0 25px;
+  color: #89839f;
+  font-size: 0.78rem;
+}
+
+.summarizer-panel form > h3 {
+  margin: 0 0 13px;
+  font-size: 0.95rem;
+}
+
+.summarizer-length-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.summarizer-length-card {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  align-items: flex-start;
+  min-height: 80px;
+  padding: 15px;
+  border: 1px solid rgba(167, 139, 250, 0.2);
+  border-radius: 13px;
+  background: rgba(139, 92, 246, 0.035);
+  color: #f5f3ff;
+  text-align: left;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.summarizer-length-card span {
+  font-weight: 750;
+}
+
+.summarizer-length-card small {
+  color: #a5a0bc;
+  line-height: 1.4;
+}
+
+.summarizer-length-card:hover,
+.summarizer-length-card.selected {
+  border-color: #a78bfa;
+  background: rgba(139, 92, 246, 0.13);
+}
+
+.summarizer-generate {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 52px;
+  padding: 14px 20px;
+  border: 0;
+  border-radius: 13px;
+  background: linear-gradient(100deg, #8b5cf6, #6d5dfc 55%, #0ea5e9);
+  color: white;
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.summarizer-generate:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.summarizer-generate:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.summarizer-spinner {
+  animation: summarizer-spin 1s linear infinite;
+}
+
+@keyframes summarizer-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.summarizer-error {
+  margin-top: 18px;
+  padding: 14px;
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  border-radius: 12px;
+  background: rgba(127, 29, 29, 0.14);
+  color: #fca5a5;
+  line-height: 1.5;
+}
+
+.summarizer-loading {
+  margin: 18px 0 0;
+  color: #c4b5fd;
+  text-align: center;
+  line-height: 1.6;
+}
+
+.summarizer-result {
+  margin-top: 28px;
+  padding: clamp(17px, 3vw, 25px);
+  border: 1px solid rgba(34, 211, 238, 0.22);
+  border-radius: 16px;
+  background: rgba(8, 145, 178, 0.055);
+}
+
+.summarizer-result-heading {
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.summarizer-result-heading .summarizer-eyebrow {
+  margin-bottom: 8px;
+  color: #67e8f9;
+}
+
+.summarizer-copy {
+  border-color: rgba(34, 211, 238, 0.25);
+  background: rgba(8, 145, 178, 0.1);
+  color: #a5f3fc;
+}
+
+.summarizer-result-text {
+  color: #e9e7f5;
+  line-height: 1.85;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.summarizer-privacy {
+  margin: 18px 4px 0;
+  color: #89839f;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  text-align: center;
+}
+
+@media (max-width: 600px) {
+  .summarizer-header {
+    align-items: flex-start;
+    gap: 13px;
+  }
+
+  .summarizer-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 15px;
+  }
+
+  .summarizer-length-options {
+    grid-template-columns: 1fr;
+  }
+
+  .summarizer-length-card {
+    min-height: auto;
+  }
+
+  .summarizer-section-heading,
+  .summarizer-result-heading {
+    align-items: flex-start;
+  }
+
+  .summarizer-result-heading {
+    flex-direction: column;
+  }
+}
