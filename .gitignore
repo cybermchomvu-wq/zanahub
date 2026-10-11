@@ -47,3 +47,8 @@ backend/backup*/
 *.bak
 *.before-*
 backend/backup*/
+
+# Local migration backups
+backend/*.sqlite-backup.js
+backend/database.js.before-ip-fix
+backend/database.js.backup*

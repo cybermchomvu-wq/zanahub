@@ -5,6 +5,7 @@ import { OAuth2Client } from 'google-auth-library';
 import { randomBytes } from 'node:crypto';
 
 const googleClient = new OAuth2Client();
+
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 10,
@@ -25,7 +26,11 @@ function createToken(userId) {
   return jwt.sign(
     { sub: String(userId) },
     secret,
-    { expiresIn: '7d', issuer: 'zanahub-api', audience: 'zanahub-app' },
+    {
+      expiresIn: '7d',
+      issuer: 'zanahub-api',
+      audience: 'zanahub-app',
+    },
   );
 }
 
@@ -48,10 +53,12 @@ function requireAuth(req, res, next) {
     req.userId = Number(payload.sub);
 
     if (!Number.isSafeInteger(req.userId) || req.userId < 1) {
-      return res.status(401).json({ error: 'Invalid authentication token.' });
+      return res.status(401).json({
+        error: 'Invalid authentication token.',
+      });
     }
 
-    next();
+    return next();
   } catch {
     return res.status(401).json({
       error: 'Your login session is invalid or expired. Please log in again.',
@@ -59,7 +66,12 @@ function requireAuth(req, res, next) {
   }
 }
 
+function isUniqueViolation(error) {
+  return error?.code === '23505';
+}
+
 export function registerAuthRoutes(app, db) {
+  // Register a new account and create its free subscription atomically.
   app.post('/api/auth/register', authLimiter, async (req, res) => {
     try {
       const { name, email, password } = req.body || {};
@@ -98,11 +110,12 @@ export function registerAuthRoutes(app, db) {
         });
       }
 
-      const existing = db.prepare(
-        'SELECT id FROM users WHERE email = ?',
-      ).get(cleanEmail);
+      const existing = await db.query(
+        'SELECT id FROM users WHERE email = $1',
+        [cleanEmail],
+      );
 
-      if (existing) {
+      if (existing.rowCount > 0) {
         return res.status(409).json({
           error: 'An account with this email already exists.',
         });
@@ -110,23 +123,25 @@ export function registerAuthRoutes(app, db) {
 
       const passwordHash = await bcrypt.hash(password, 12);
 
-      const createAccount = db.transaction(() => {
-        const result = db.prepare(`
-          INSERT INTO users (name, email, password_hash)
-          VALUES (?, ?, ?)
-        `).run(cleanName, cleanEmail, passwordHash);
+      const userId = await db.transaction(async (client) => {
+        const result = await client.query(
+          `INSERT INTO users (name, email, password_hash)
+           VALUES ($1, $2, $3)
+           RETURNING id`,
+          [cleanName, cleanEmail, passwordHash],
+        );
 
-        const userId = Number(result.lastInsertRowid);
+        const id = Number(result.rows[0].id);
 
-        db.prepare(`
-          INSERT INTO subscriptions (user_id, plan, status)
-          VALUES (?, 'free', 'active')
-        `).run(userId);
+        await client.query(
+          `INSERT INTO subscriptions (user_id, plan, status)
+           VALUES ($1, 'free', 'active')`,
+          [id],
+        );
 
-        return userId;
+        return id;
       });
 
-      const userId = createAccount();
       const token = createToken(userId);
 
       return res.status(201).json({
@@ -140,7 +155,7 @@ export function registerAuthRoutes(app, db) {
         },
       });
     } catch (error) {
-      if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+      if (isUniqueViolation(error)) {
         return res.status(409).json({
           error: 'An account with this email already exists.',
         });
@@ -154,6 +169,7 @@ export function registerAuthRoutes(app, db) {
     }
   });
 
+  // Sign in with email and password.
   app.post('/api/auth/login', authLimiter, async (req, res) => {
     try {
       const { email, password } = req.body || {};
@@ -169,11 +185,14 @@ export function registerAuthRoutes(app, db) {
         });
       }
 
-      const user = db.prepare(`
-        SELECT id, name, email, password_hash
-        FROM users
-        WHERE email = ?
-      `).get(email.trim().toLowerCase());
+      const result = await db.query(
+        `SELECT id, name, email, password_hash
+         FROM users
+         WHERE email = $1`,
+        [email.trim().toLowerCase()],
+      );
+
+      const user = result.rows[0];
 
       const passwordMatches = user
         ? await bcrypt.compare(password, user.password_hash)
@@ -185,13 +204,14 @@ export function registerAuthRoutes(app, db) {
         });
       }
 
-      const token = createToken(user.id);
+      const userId = Number(user.id);
+      const token = createToken(userId);
 
       return res.json({
         message: 'Login successful.',
         token,
         user: {
-          id: user.id,
+          id: userId,
           name: user.name,
           email: user.email,
         },
@@ -204,6 +224,7 @@ export function registerAuthRoutes(app, db) {
       });
     }
   });
+
   // Sign in with Google.
   app.post('/api/auth/google', authLimiter, async (req, res) => {
     try {
@@ -222,9 +243,7 @@ export function registerAuthRoutes(app, db) {
       const clientId = process.env.GOOGLE_CLIENT_ID;
 
       if (!clientId) {
-        console.error('GOOGLE_CLIENT_ID is not configured.');
-
-        return res.status(500).json({
+        return res.status(503).json({
           error: 'Google Sign-In is not configured yet.',
         });
       }
@@ -255,61 +274,79 @@ export function registerAuthRoutes(app, db) {
           : email.split('@')[0]
       ).slice(0, 80);
 
-      const existingByGoogle = db.prepare(`
-        SELECT id, name, email
-        FROM users
-        WHERE google_sub = ?
-      `).get(googleSub);
+      const existingByGoogle = await db.query(
+        `SELECT id, name, email
+         FROM users
+         WHERE google_sub = $1`,
+        [googleSub],
+      );
 
       let userId;
 
-      if (existingByGoogle) {
-        userId = existingByGoogle.id;
+      if (existingByGoogle.rowCount > 0) {
+        userId = Number(existingByGoogle.rows[0].id);
       } else {
-        const existingByEmail = db.prepare(`
-          SELECT id, name, email, google_sub
-          FROM users
-          WHERE email = ?
-        `).get(email);
+        const existingByEmail = await db.query(
+          `SELECT id, google_sub
+           FROM users
+           WHERE email = $1`,
+          [email],
+        );
 
-                if (existingByEmail) {
-          if (existingByEmail.google_sub !== googleSub) {
+        if (existingByEmail.rowCount > 0) {
+          const existing = existingByEmail.rows[0];
+
+          if (existing.google_sub !== googleSub) {
             return res.status(409).json({
               error:
                 'An account with this email already exists. Please sign in using your existing method first.',
             });
           }
 
-          userId = existingByEmail.id;
+          userId = Number(existing.id);
         } else {
           const randomPassword = randomBytes(32).toString('hex');
           const passwordHash = await bcrypt.hash(randomPassword, 12);
 
-          const createGoogleAccount = db.transaction(() => {
-            const result = db.prepare(`
-              INSERT INTO users (name, email, password_hash, google_sub)
-              VALUES (?, ?, ?, ?)
-            `).run(name, email, passwordHash, googleSub);
+          userId = await db.transaction(async (client) => {
+            const result = await client.query(
+              `INSERT INTO users
+                 (name, email, password_hash, google_sub)
+               VALUES ($1, $2, $3, $4)
+               RETURNING id`,
+              [name, email, passwordHash, googleSub],
+            );
 
-            const newUserId = Number(result.lastInsertRowid);
+            const id = Number(result.rows[0].id);
 
-            db.prepare(`
-              INSERT INTO subscriptions (user_id, plan, status)
-              VALUES (?, 'free', 'active')
-            `).run(newUserId);
+            await client.query(
+              `INSERT INTO subscriptions (user_id, plan, status)
+               VALUES ($1, 'free', 'active')`,
+              [id],
+            );
 
-            return newUserId;
+            return id;
           });
-
-          userId = createGoogleAccount();
         }
       }
 
-      const user = db.prepare(`
-        SELECT id, name, email
-        FROM users
-        WHERE id = ?
-      `).get(userId);
+      const userResult = await db.query(
+        `SELECT id, name, email
+         FROM users
+         WHERE id = $1`,
+        [userId],
+      );
+
+      if (userResult.rowCount === 0) {
+        return res.status(404).json({
+          error: 'Account not found.',
+        });
+      }
+
+      const user = {
+        ...userResult.rows[0],
+        id: Number(userResult.rows[0].id),
+      };
 
       const token = createToken(userId);
 
@@ -319,9 +356,9 @@ export function registerAuthRoutes(app, db) {
         user,
       });
     } catch (error) {
-      if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+      if (isUniqueViolation(error)) {
         return res.status(409).json({
-          error: 'This Google account is already registered.',
+          error: 'This Google account or email is already registered.',
         });
       }
 
@@ -332,44 +369,69 @@ export function registerAuthRoutes(app, db) {
       });
     }
   });
-  app.get('/api/auth/me', requireAuth, (req, res) => {
-    try {
-      const user = db.prepare(`
-        SELECT id, name, email, created_at
-        FROM users
-        WHERE id = ?
-      `).get(req.userId);
 
-      if (!user) {
-        return res.status(404).json({ error: 'Account not found.' });
+  // Return the signed-in user's account and current subscription.
+  app.get('/api/auth/me', requireAuth, async (req, res) => {
+    try {
+      const userResult = await db.query(
+        `SELECT id, name, email, created_at
+         FROM users
+         WHERE id = $1`,
+        [req.userId],
+      );
+
+      if (userResult.rowCount === 0) {
+        return res.status(404).json({
+          error: 'Account not found.',
+        });
       }
 
-      const subscription = db.prepare(`
-        SELECT plan, status, starts_at, expires_at
-        FROM subscriptions
-        WHERE user_id = ?
-        ORDER BY id DESC
-        LIMIT 1
-      `).get(req.userId);
+      const subscriptionResult = await db.query(
+        `SELECT plan, status, starts_at, expires_at
+         FROM subscriptions
+         WHERE user_id = $1
+         ORDER BY id DESC
+         LIMIT 1`,
+        [req.userId],
+      );
 
-            const now = Date.now();
+      const subscription = subscriptionResult.rows[0];
+      const now = Date.now();
+
+      const startsAt = subscription?.starts_at
+        ? new Date(subscription.starts_at).getTime()
+        : null;
+
+      const expiresAt = subscription?.expires_at
+        ? new Date(subscription.expires_at).getTime()
+        : null;
 
       const hasActivePro = Boolean(
         subscription &&
         subscription.plan === 'pro' &&
         subscription.status === 'active' &&
-        subscription.expires_at &&
-        Date.parse(subscription.expires_at) > now &&
-        (!subscription.starts_at ||
-          Date.parse(subscription.starts_at) <= now)
+        expiresAt !== null &&
+        Number.isFinite(expiresAt) &&
+        expiresAt > now &&
+        (
+          startsAt === null ||
+          (Number.isFinite(startsAt) && startsAt <= now)
+        ),
       );
+
+      const user = {
+        ...userResult.rows[0],
+        id: Number(userResult.rows[0].id),
+      };
 
       return res.json({
         user,
         subscription: {
           plan: hasActivePro ? 'pro' : 'free',
-          status: 'active',
-          expiresAt: hasActivePro ? subscription.expires_at : null,
+          status: subscription?.status || 'active',
+          expiresAt: hasActivePro
+            ? subscription.expires_at
+            : null,
         },
       });
     } catch (error) {
@@ -381,5 +443,5 @@ export function registerAuthRoutes(app, db) {
     }
   });
 
-  console.log('ZanaHub authentication routes registered.');
+  console.log('ZanaHub PostgreSQL authentication routes registered.');
 }

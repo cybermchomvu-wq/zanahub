@@ -31,7 +31,7 @@ export default function AIWritingAssistant({ onBack }) {
     setCopied(false);
 
     try {
-      const response = await fetch('${import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.hostname}:3001`}/api/ai/write', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.hostname}:3001`}/api/ai/write`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('zanahub_token') || ''}`, 'Content-Type': 'application/json' },

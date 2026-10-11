@@ -1,6 +1,5 @@
 import jwt from 'jsonwebtoken';
 import rateLimit from 'express-rate-limit';
-import { randomBytes } from 'node:crypto';
 
 const checkoutLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -45,7 +44,7 @@ function requirePaymentAuth(req, res, next) {
     }
 
     req.userId = userId;
-    next();
+    return next();
   } catch {
     return res.status(401).json({
       error: 'Your login session is invalid or expired. Please log in again.',
@@ -58,77 +57,92 @@ export function registerPaymentRoutes(app, db) {
     '/api/payments/checkout',
     checkoutLimiter,
     requirePaymentAuth,
-    (req, res) => {
-      const user = db.prepare(`
-        SELECT id, name, email
-        FROM users
-        WHERE id = ?
-      `).get(req.userId);
+    async (req, res) => {
+      try {
+        const result = await db.query(
+          `SELECT id, name, email
+           FROM users
+           WHERE id = $1`,
+          [req.userId],
+        );
 
-      if (!user) {
-        return res.status(404).json({
-          error: 'Account not found.',
-        });
-      }
+        if (result.rowCount === 0) {
+          return res.status(404).json({
+            error: 'Account not found.',
+          });
+        }
 
-      // Validate the phone number on the server, not only in the browser.
-      const phone = typeof req.body?.phone === 'string'
-        ? req.body.phone.trim()
-        : '';
+        const phone = typeof req.body?.phone === 'string'
+          ? req.body.phone.trim()
+          : '';
 
-      if (!/^\+255[67]\d{8}$/.test(phone)) {
-        return res.status(400).json({
-          error: 'Enter a valid Tanzanian mobile number, such as +255712345678.',
-        });
-      }
+        if (!/^\+255[67]\d{8}$/.test(phone)) {
+          return res.status(400).json({
+            error: 'Enter a valid Tanzanian mobile number, such as +255712345678.',
+          });
+        }
 
-      const hasSelcomCredentials = Boolean(
-        process.env.SELCOM_BASE_URL &&
-        process.env.SELCOM_API_KEY &&
-        process.env.SELCOM_API_SECRET &&
-        process.env.SELCOM_VENDOR_ID
-      );
+        const hasSelcomCredentials = Boolean(
+          process.env.SELCOM_BASE_URL &&
+          process.env.SELCOM_API_KEY &&
+          process.env.SELCOM_API_SECRET &&
+          process.env.SELCOM_VENDOR_ID
+        );
 
-      if (!hasSelcomCredentials) {
+        if (!hasSelcomCredentials) {
+          return res.status(503).json({
+            error: 'Premium checkout is not configured yet. No payment was started.',
+            amount: 1000,
+            currency: 'TZS',
+          });
+        }
+
+        // Keep payments disabled until gateway requests, callbacks, and
+        // signature verification have been implemented and tested.
         return res.status(503).json({
-          error: 'Premium checkout is not configured yet. No payment was started.',
+          error: 'The payment gateway integration is not enabled yet. No payment was started.',
           amount: 1000,
           currency: 'TZS',
         });
-      }
+      } catch (error) {
+        console.error('Checkout lookup failed:', error.message);
 
-      // Fail closed until the real gateway request and signature verification
-      // have been implemented and tested.
-      return res.status(503).json({
-        error: 'The payment gateway integration is not enabled yet. No payment was started.',
-        amount: 1000,
-        currency: 'TZS',
-      });
-    }
+        return res.status(500).json({
+          error: 'Could not prepare checkout. No payment was started.',
+        });
+      }
+    },
   );
 
   app.get(
     '/api/payments/history',
     requirePaymentAuth,
-    (req, res) => {
+    async (req, res) => {
       try {
-        const payments = db.prepare(`
-          SELECT
-            id,
-            amount_tzs AS amount,
-            currency,
-            provider,
-            provider_reference AS reference,
-            status,
-            created_at AS createdAt,
-            verified_at AS verifiedAt
-          FROM payments
-          WHERE user_id = ?
-          ORDER BY id DESC
-          LIMIT 50
-        `).all(req.userId);
+        const result = await db.query(
+          `SELECT
+             id,
+             amount_tzs AS amount,
+             currency,
+             provider,
+             provider_reference AS reference,
+             status,
+             created_at AS "createdAt",
+             verified_at AS "verifiedAt"
+           FROM payments
+           WHERE user_id = $1
+           ORDER BY id DESC
+           LIMIT 50`,
+          [req.userId],
+        );
 
-        return res.json({ payments });
+        return res.json({
+          payments: result.rows.map((payment) => ({
+            ...payment,
+            id: Number(payment.id),
+            amount: Number(payment.amount),
+          })),
+        });
       } catch (error) {
         console.error('Payment history lookup failed:', error.message);
 
@@ -136,8 +150,8 @@ export function registerPaymentRoutes(app, db) {
           error: 'Could not retrieve payment history.',
         });
       }
-    }
+    },
   );
 
-  console.log('ZanaHub payment routes registered.');
+  console.log('ZanaHub PostgreSQL payment routes registered.');
 }

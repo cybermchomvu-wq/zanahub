@@ -1,6 +1,6 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
 import jwt from 'jsonwebtoken';
 import { GoogleGenAI } from '@google/genai';
@@ -8,8 +8,6 @@ import { InferenceClient } from '@huggingface/inference';
 import db from './database.js';
 import { registerAuthRoutes } from './auth.js';
 import { registerPaymentRoutes } from './payments.js';
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -51,7 +49,7 @@ app.get('/api/health', (_req, res) => {
 });
 
 
-function requirePro(req, res, next) {
+async function requirePro(req, res, next) {
   const authorization = req.headers.authorization || '';
   const [scheme, token] = authorization.split(' ');
 
@@ -61,34 +59,45 @@ function requirePro(req, res, next) {
     });
   }
 
+  let userId;
+
   try {
     const payload = jwt.verify(token, process.env.AUTH_JWT_SECRET, {
       issuer: 'zanahub-api',
       audience: 'zanahub-app',
     });
 
-    const userId = Number(payload.sub);
+    userId = Number(payload.sub);
 
     if (!Number.isSafeInteger(userId) || userId < 1) {
       return res.status(401).json({
         error: 'Your login session is invalid. Please sign in again.',
       });
     }
+  } catch {
+    return res.status(401).json({
+      error: 'Your login session is invalid or expired. Please sign in again.',
+    });
+  }
 
-    const subscription = db.prepare(`
+  try {
+    const result = await db.query(`
       SELECT plan, status, starts_at, expires_at
       FROM subscriptions
-      WHERE user_id = ?
+      WHERE user_id = $1
       ORDER BY id DESC
       LIMIT 1
-    `).get(userId);
+    `, [userId]);
 
+    const subscription = result.rows[0];
     const now = Date.now();
+
     const startsAt = subscription?.starts_at
-      ? Date.parse(subscription.starts_at)
+      ? new Date(subscription.starts_at).getTime()
       : null;
+
     const expiresAt = subscription?.expires_at
-      ? Date.parse(subscription.expires_at)
+      ? new Date(subscription.expires_at).getTime()
       : null;
 
     const activePro = Boolean(
@@ -110,16 +119,8 @@ function requirePro(req, res, next) {
     }
 
     req.userId = userId;
-    next();
+    return next();
   } catch (error) {
-    if (error.name === 'JsonWebTokenError' ||
-        error.name === 'TokenExpiredError' ||
-        error.name === 'NotBeforeError') {
-      return res.status(401).json({
-        error: 'Your login session is invalid or expired. Please sign in again.',
-      });
-    }
-
     console.error('Pro access verification failed:', error.message);
 
     return res.status(500).json({
@@ -252,6 +253,18 @@ app.post('/api/ai/image', imageLimiter, requirePro, async (req, res) => {
   }
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`ZanaHub AI API running at http://127.0.0.1:${PORT}`);
-});
+async function startServer() {
+  try {
+    await db.initialize();
+
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`ZanaHub AI API listening on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error('Could not start ZanaHub API:', error.message);
+    process.exitCode = 1;
+    await db.close().catch(() => {});
+  }
+}
+
+startServer();

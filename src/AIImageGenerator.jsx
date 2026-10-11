@@ -61,7 +61,7 @@ export default function AIImageGenerator({ onBack }) {
     setImage('');
 
     try {
-      const response = await fetch('${import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.hostname}:3001`}/api/ai/image', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.hostname}:3001`}/api/ai/image`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('zanahub_token') || ''}`,
