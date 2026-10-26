@@ -26,6 +26,7 @@ import {
   Check,
 } from 'lucide-react';
 import './App.css';
+import InfoPage from './InfoPage';
 import AIWritingAssistant from './AIWritingAssistant';
 import AISummarizer from './AISummarizer';
 import AITranslator from './AITranslator';
@@ -586,7 +587,19 @@ function App() {
         </header>
 
         <div className="page-content">
-          {activePage === 'account' ? (
+          {['about', 'contact', 'privacy', 'terms'].includes(activePage) ? (
+            <InfoPage
+              page={activePage}
+              onBack={() => {
+                setActivePage('discover');
+                setActiveTool(null);
+              }}
+              onNavigate={(page) => {
+                setActivePage(page);
+                setActiveTool(null);
+              }}
+            />
+          ) : activePage === 'account' ? (
             <AccountDashboard
               currentUser={currentUser}
               accountDetails={accountDetails}
@@ -801,30 +814,47 @@ function App() {
           <section className="premium-banner">
             <div className="premium-art">
               <div className="premium-art-ring" />
-              <Crown size={39} />
+              <Sparkles size={39} />
             </div>
             <div className="premium-copy">
-              <div className="premium-eyebrow"><Sparkles size={13} /> ZANAHUB PRO</div>
-              <h2>More possibilities. <span>Less limits.</span></h2>
-              <p>Unlock premium tools and get more done in less time.</p>
+              <div className="premium-eyebrow">
+                <Heart size={13} /> WELCOME TO ZANAHUB
+              </div>
+              <h2>Useful tools. <span>One free hub.</span></h2>
+              <p>Explore our growing collection of tools for everyday tasks.</p>
             </div>
             <div className="premium-action">
-              <div className="price">TSh 1,000 <span>/ month</span></div>
               <button
                 onClick={() => {
-                  setActivePage('pro');
-                  setNotice('');
+                  setActivePage('discover');
+                  setActiveTool(null);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
               >
-                Get Pro <ArrowUpRight size={17} />
+                Explore tools <ArrowUpRight size={17} />
               </button>
             </div>
           </section>
 
           <footer className="footer">
-            <a className="footer-brand" href="#home">zana<span>hub</span></a>
+            <a
+              className="footer-brand"
+              href="#home"
+              onClick={() => {
+                setActivePage('discover');
+                setActiveTool(null);
+              }}
+            >
+              zana<span>hub</span>
+            </a>
             <span>Tools for your everyday possibilities.</span>
-            <span>© 2026 ZanaHub</span>
+            <nav className="footer-links" aria-label="Information pages">
+              <button onClick={() => { setActivePage('about'); setActiveTool(null); }}>About Us</button>
+              <button onClick={() => { setActivePage('contact'); setActiveTool(null); }}>Contact</button>
+              <button onClick={() => { setActivePage('privacy'); setActiveTool(null); }}>Privacy Policy</button>
+              <button onClick={() => { setActivePage('terms'); setActiveTool(null); }}>Terms</button>
+            </nav>
+            <span>© {new Date().getFullYear()} ZanaHub</span>
           </footer>
           </>
           )}
