@@ -98,6 +98,12 @@ const db = {
         verified_at TIMESTAMPTZ
       );
 
+      CREATE TABLE IF NOT EXISTS unique_visitors (
+        visitor_id TEXT PRIMARY KEY,
+        first_seen_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        last_seen_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+
       CREATE INDEX IF NOT EXISTS idx_subscriptions_user
         ON subscriptions(user_id);
 

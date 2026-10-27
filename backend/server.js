@@ -11,8 +11,28 @@ import { registerMediaRoutes } from './media.js';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+const allowedOrigins = new Set([
+  'https://zanahub.vercel.app',
+  'https://localhost',
+  'capacitor://localhost',
+  'http://localhost',
+  'http://127.0.0.1',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  ...(process.env.FRONTEND_ORIGIN || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean),
+]);
+
 app.use(cors({
-  origin: process.env.FRONTEND_ORIGIN || 'http://localhost:5173',
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.has(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error('Origin not allowed by CORS'));
+  },
 }));
 
 app.use(express.json({ limit: '1mb' }));
@@ -45,6 +65,57 @@ app.get('/api/health', (_req, res) => {
     status: 'ok',
     service: 'ZanaHub AI API',
   });
+});
+
+const visitorLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 60,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  message: { error: 'Please wait before registering another visit.' },
+});
+
+app.post('/api/visitors/visit', visitorLimiter, async (req, res) => {
+  try {
+    const visitorId = req.body?.visitorId;
+
+    if (
+      typeof visitorId !== 'string' ||
+      !/^[a-f0-9-]{36}$/i.test(visitorId)
+    ) {
+      return res.status(400).json({ error: 'Invalid visitor identifier.' });
+    }
+
+    await db.query(
+      `INSERT INTO unique_visitors (visitor_id)
+       VALUES ($1)
+       ON CONFLICT (visitor_id)
+       DO UPDATE SET last_seen_at = CURRENT_TIMESTAMP`,
+      [visitorId],
+    );
+
+    const result = await db.query(
+      'SELECT COUNT(*)::int AS count FROM unique_visitors',
+    );
+
+    return res.json({ count: Number(result.rows[0].count) });
+  } catch (error) {
+    console.error('Visitor tracking failed:', error.message);
+    return res.status(500).json({ error: 'Could not update visitor count.' });
+  }
+});
+
+app.get('/api/visitors/count', async (_req, res) => {
+  try {
+    const result = await db.query(
+      'SELECT COUNT(*)::int AS count FROM unique_visitors',
+    );
+
+    return res.json({ count: Number(result.rows[0].count) });
+  } catch (error) {
+    console.error('Visitor count lookup failed:', error.message);
+    return res.status(500).json({ error: 'Could not load visitor count.' });
+  }
 });
 
 
