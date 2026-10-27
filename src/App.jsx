@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import AuthPanel from './AuthPanel';
-import { AccountDashboard, ProDashboard } from './AccountPages';
+import { AccountDashboard } from './AccountPages';
 import {
   Search,
+  MessageCircle,
   Sparkles,
   FileText,
   Scissors,
@@ -24,9 +25,12 @@ import {
   Layers,
   Heart,
   Check,
+  Film,
+  Palette,
 } from 'lucide-react';
 import './App.css';
 import InfoPage from './InfoPage';
+import AIChatbot from './AIChatbot';
 import AIWritingAssistant from './AIWritingAssistant';
 import AISummarizer from './AISummarizer';
 import AITranslator from './AITranslator';
@@ -36,13 +40,30 @@ import PDFMerger from './PDFMerger';
 import PDFSplitter from './PDFSplitter';
 import ImageResizer from './ImageResizer';
 import ImageConverter from './ImageConverter';
+import WebMToMP4 from './WebMToMP4';
+import PassportPhotoMaker from './PassportPhotoMaker';
 import PDFToImage from './PDFToImage';
 import ImageToPDF from './ImageToPDF';
 import WordToPDF from './WordToPDF';
 import PDFToWord from './PDFToWord';
 import ExcelToPDF from './ExcelToPDF';
+import InvoiceGenerator from './InvoiceGenerator';
+import ReceiptGenerator from './ReceiptGenerator';
+import CurrencyExchange from './CurrencyExchange';
+import CVBuilder from './CVBuilder';
+import GPACalculator from './GPACalculator';
+import ScientificCalculator from './ScientificCalculator';
+import ProfitCalculator from './ProfitCalculator';
+import NotesGenerator from './NotesGenerator';
+import JSONFormatter from './JSONFormatter';
+import ColorPaletteGenerator from './ColorPaletteGenerator';
+import LogoMaker from './LogoMaker';
+import AICodeExplainer from './AICodeExplainer';
+import AIBugFinder from './AIBugFinder';
+import CodePlayground from './CodePlayground';
 
 const categories = [
+  { name: 'Home', icon: Zap },
   { name: 'All Tools', icon: Layers },
   { name: 'AI Tools', icon: Sparkles },
   { name: 'PDF & Documents', icon: FileText },
@@ -50,9 +71,20 @@ const categories = [
   { name: 'Business', icon: BriefcaseBusiness },
   { name: 'Education', icon: GraduationCap },
   { name: 'Calculators', icon: Calculator },
+  { name: 'Coding Tools', icon: Code2 },
+  { name: 'Graphic Design', icon: Palette },
 ];
 
 const tools = [
+  {
+    name: 'AI Chatbot',
+    description: 'Chat with AI, ask questions, and explore ideas.',
+    category: 'AI Tools',
+    icon: MessageCircle,
+    color: 'violet',
+    tag: 'NEW',
+    premium: false,
+  },
   {
     name: 'AI Summarizer',
     description: 'Turn long text into clear, useful summaries with AI.',
@@ -135,10 +167,28 @@ const tools = [
     premium: false,
   },
   {
+    name: 'Passport Photo Maker',
+    description: 'Crop, size, and prepare passport-style photos.',
+    category: 'Image Tools',
+    icon: Image,
+    color: 'violet',
+    tag: 'NEW',
+    premium: false,
+  },
+  {
     name: 'Image Resizer',
     description: 'Resize images to custom dimensions and formats.',
     category: 'Image Tools',
     icon: Image,
+    color: 'violet',
+    tag: 'NEW',
+    premium: false,
+  },
+  {
+    name: 'WebM to MP4',
+    description: 'Convert WebM videos into compatible MP4 video files.',
+    category: 'Image Tools',
+    icon: Film,
     color: 'violet',
     tag: 'NEW',
     premium: false,
@@ -162,6 +212,15 @@ const tools = [
     premium: false,
   },
   {
+    name: 'Currency Exchange',
+    description: 'Convert between world currencies using online exchange rates.',
+    category: 'Business',
+    icon: Globe,
+    color: 'green',
+    tag: 'NEW',
+    premium: false,
+  },
+  {
     name: 'Invoice Generator',
     description: 'Create professional invoices for your business.',
     category: 'Business',
@@ -171,12 +230,50 @@ const tools = [
     premium: false,
   },
   {
+    name: 'Receipt Generator',
+    description: 'Create and download professional payment receipts.',
+    category: 'Business',
+    icon: FileText,
+    color: 'green',
+    tag: 'NEW',
+    premium: false,
+  },
+  {
     name: 'Grade Calculator',
     description: 'Calculate grades and track academic results.',
     category: 'Education',
     icon: GraduationCap,
     color: 'orange',
     tag: null,
+    premium: false,
+  },
+
+  {
+    name: 'Scientific Calculator',
+    description: 'Calculate with trigonometry, powers, roots, logarithms, and more.',
+    category: 'Calculators',
+    icon: Calculator,
+    color: 'purple',
+    tag: 'NEW',
+    premium: false,
+  },
+  {
+    name: 'Notes Generator',
+    description: 'Generate, edit, save, and print AI-powered study notes.',
+    category: 'Education',
+    icon: GraduationCap,
+    color: 'orange',
+    tag: 'NEW',
+    premium: false,
+  },
+
+  {
+    name: 'GPA Calculator',
+    description: 'Calculate GPA using subjects, grades, and credit units.',
+    category: 'Education',
+    icon: GraduationCap,
+    color: 'orange',
+    tag: 'NEW',
     premium: false,
   },
   {
@@ -215,19 +312,70 @@ const tools = [
     tag: null,
     premium: true,
   },
+  {
+    name: 'JSON Formatter',
+    description: 'Format, validate, and minify JSON data.',
+    category: 'Coding Tools',
+    icon: Code2,
+    color: 'cyan',
+    tag: 'NEW',
+    premium: false,
+  },
+  {
+    name: 'Logo Maker',
+    description: 'Design custom logos and download them as PNG or SVG.',
+    category: 'Graphic Design',
+    icon: Palette,
+    color: 'violet',
+    tag: 'NEW',
+    premium: false,
+  },
+  {
+    name: 'Color Palette Generator',
+    description: 'Generate, customize, and export beautiful color palettes.',
+    category: 'Graphic Design',
+    icon: Palette,
+    color: 'violet',
+    tag: 'NEW',
+    premium: false,
+  },
+  {
+    name: 'Code Playground',
+    description: 'Write HTML, CSS, and JavaScript with a live preview.',
+    category: 'Coding Tools',
+    icon: Code2,
+    color: 'cyan',
+    tag: 'NEW',
+    premium: false,
+  },
+  {
+    name: 'AI Code Explainer',
+    description: 'Understand code with clear, AI-powered explanations.',
+    category: 'Coding Tools',
+    icon: Code2,
+    color: 'violet',
+    tag: 'AI',
+    premium: false,
+  },
+  {
+    name: 'AI Bug Finder',
+    description: 'Find potential code errors and get suggested fixes with AI.',
+    category: 'Coding Tools',
+    icon: Code2,
+    color: 'red',
+    tag: 'AI',
+    premium: false,
+  },
 ];
 
 function App() {
-  const [activeCategory, setActiveCategory] = useState('All Tools');
+  const [activeCategory, setActiveCategory] = useState('Home');
   const [search, setSearch] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const [notice, setNotice] = useState('');
   const [activeTool, setActiveTool] = useState(null);
   const [activePage, setActivePage] = useState('discover');
   const [accountDetails, setAccountDetails] = useState(null);
-  const [subscription, setSubscription] = useState(null);
-  const [subscriptionLoading, setSubscriptionLoading] = useState(false);
-  const [subscriptionError, setSubscriptionError] = useState('');
   const [currentUser, setCurrentUser] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('zanahub_user') || 'null');
@@ -265,23 +413,15 @@ function App() {
     async function loadAccount() {
       if (!currentUser) {
         setAccountDetails(null);
-        setSubscription(null);
-        setSubscriptionError('');
-        setSubscriptionLoading(false);
         return;
       }
 
       const token = localStorage.getItem('zanahub_token');
       if (!token) {
         setAccountDetails(null);
-        setSubscription(null);
-        setSubscriptionError('Please sign in again to load your account details.');
-        setSubscriptionLoading(false);
         return;
       }
 
-      setSubscriptionLoading(true);
-      setSubscriptionError('');
 
       try {
         const apiBase =
@@ -299,18 +439,12 @@ function App() {
 
         if (!cancelled) {
           setAccountDetails(data.user || null);
-          setSubscription(data.subscription || { plan: 'free', status: 'active' });
         }
       } catch (error) {
         if (!cancelled) {
           setAccountDetails(null);
-          setSubscription(null);
-          setSubscriptionError(
-            error.message || 'Could not connect to the account service.'
-          );
+          console.error('Could not load account details:', error);
         }
-      } finally {
-        if (!cancelled) setSubscriptionLoading(false);
       }
     }
 
@@ -332,29 +466,138 @@ function App() {
     return matchesCategory && matchesSearch;
   });
 
+
+
   function openTool(tool) {
-    // Premium tools require a verified, active Pro subscription.
-    if (tool.premium) {
-      if (!currentUser || !localStorage.getItem('zanahub_token')) {
-        setActiveTool(null);
-        setNotice('Please sign in to access ZanaHub Pro tools.');
-        setActivePage('pro');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        return;
-      }
+  if (tool.name === 'Logo Maker') {
+    setNotice('');
+    setActiveTool('Logo Maker');
+    setActivePage('discover');
+    setMenuOpen(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    return;
+  }
 
-      if (subscriptionLoading) {
-        setNotice('Checking your ZanaHub Pro subscription. Please try again in a moment.');
-        return;
-      }
+    if (tool.name === 'Color Palette Generator') {
+      setNotice('');
+      setActiveTool('Color Palette Generator');
+      setActivePage('discover');
+      setMenuOpen(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
 
-      if (subscriptionError || !subscription || subscription.plan !== 'pro') {
-        setActiveTool(null);
-        setNotice('This tool requires ZanaHub Pro. Upgrade to unlock premium AI tools.');
-        setActivePage('pro');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        return;
-      }
+
+    if (tool.name === 'AI Bug Finder') {
+      setNotice('');
+      setActiveTool('AI Bug Finder');
+      setActivePage('discover');
+      setMenuOpen(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+
+    if (tool.name === 'AI Code Explainer') {
+      setNotice('');
+      setActiveTool('AI Code Explainer');
+      setActivePage('discover');
+      setMenuOpen(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+
+    if (tool.name === 'Code Playground') {
+      setNotice('');
+      setActiveTool('Code Playground');
+      setActivePage('discover');
+      setMenuOpen(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+
+    if (tool.name === 'JSON Formatter') {
+      setNotice('');
+      setActiveTool('JSON Formatter');
+      setActivePage('discover');
+      setMenuOpen(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    if (tool.name === 'Passport Photo Maker') {
+      setNotice('');
+      setActiveTool('Passport Photo Maker');
+      setMenuOpen(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    if (tool.name === 'Profit Calculator') {
+      setNotice('');
+      setActiveTool('Profit Calculator');
+      setMenuOpen(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    if (tool.name === 'Scientific Calculator') {
+      setNotice('');
+      setActiveTool('Scientific Calculator');
+      setMenuOpen(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    if (tool.name === 'Notes Generator') {
+      setNotice('');
+      setActiveTool('Notes Generator');
+      setMenuOpen(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    if (tool.name === 'GPA Calculator') {
+      setNotice('');
+      setActiveTool('GPA Calculator');
+      setMenuOpen(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    if (tool.name === 'CV Builder') {
+      setNotice('');
+      setActiveTool('CV Builder');
+      setMenuOpen(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+
+    if (tool.name === 'Currency Exchange') {
+      setNotice('');
+      setActiveTool('Currency Exchange');
+      setMenuOpen(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    if (tool.name === 'Invoice Generator') {
+      setNotice('');
+      setActiveTool('Invoice Generator');
+      setMenuOpen(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    if (tool.name === 'Receipt Generator') {
+      setNotice('');
+      setActiveTool('Receipt Generator');
+      setMenuOpen(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
     }
 
     if (tool.name === 'AI Image Generator') {
@@ -388,6 +631,14 @@ function App() {
     if (tool.name === 'Image Resizer') {
       setNotice('');
       setActiveTool('Image Resizer');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    if (tool.name === 'WebM to MP4') {
+      setNotice('');
+      setActiveTool('WebM to MP4');
+      setMenuOpen(false);
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
@@ -453,6 +704,14 @@ function App() {
       return;
     }
 
+    if (tool.name === 'AI Chatbot') {
+      setNotice('');
+      setActiveTool('AI Chatbot');
+      setMenuOpen(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
     setNotice(
       `${tool.name} selected. We will build this tool in a future development step.`,
     );
@@ -484,7 +743,11 @@ function App() {
                 className={`category-link ${active ? 'active' : ''}`}
                 onClick={() => {
                   setActiveCategory(category.name);
+                  setActiveTool(null);
+                  setActivePage('discover');
+                  setSearch('');
                   setMenuOpen(false);
+                  setNotice('');
                 }}
               >
                 <Icon size={18} />
@@ -521,21 +784,6 @@ function App() {
 
         <div className="sidebar-bottom">
           <div className="sidebar-glow" />
-          <div className="mini-crown">
-            <Crown size={21} />
-          </div>
-          <h3>Unlock more with Pro</h3>
-          <p>Get access to premium tools and unlock your productivity.</p>
-          <button
-            className="upgrade-button"
-            onClick={() => {
-              setActivePage('pro');
-              setMenuOpen(false);
-              setNotice('');
-            }}
-          >
-            Explore Pro <ArrowUpRight size={16} />
-          </button>
           <div className="sidebar-version">ZANAHUB · VERSION 0.1</div>
         </div>
       </aside>
@@ -603,20 +851,39 @@ function App() {
             <AccountDashboard
               currentUser={currentUser}
               accountDetails={accountDetails}
-              subscription={subscription}
-              loading={subscriptionLoading}
-              error={subscriptionError}
-              onBack={() => setActivePage('discover')}
-              onUpgrade={() => setActivePage('pro')}
-            />
-          ) : activePage === 'pro' ? (
-            <ProDashboard
-              subscription={subscription}
-              loading={subscriptionLoading}
-              error={subscriptionError}
               onBack={() => setActivePage('discover')}
             />
-          ) : activeTool === 'AI Image Generator' ? (
+          ) : activeTool === 'AI Bug Finder' ? (
+            <AIBugFinder onBack={() => setActiveTool(null)} />
+          ) : activeTool === 'AI Code Explainer' ? (
+            <AICodeExplainer onBack={() => setActiveTool(null)} />
+          ) : activeTool === 'Code Playground' ? (
+            <CodePlayground onBack={() => setActiveTool(null)} />
+          ) : activeTool === 'Logo Maker' ? (
+    <LogoMaker onBack={() => setActiveTool(null)} />
+) : activeTool === 'Color Palette Generator' ? (
+            <ColorPaletteGenerator onBack={() => setActiveTool(null)} />
+          ) : activeTool === 'JSON Formatter' ? (
+            <JSONFormatter onBack={() => setActiveTool(null)} />
+          ) : activeTool === 'Profit Calculator' ? (
+            <ProfitCalculator onBack={() => setActiveTool(null)} />
+          ) : activeTool === 'Scientific Calculator' ? (
+            <ScientificCalculator onBack={() => setActiveTool(null)} />
+          ) : activeTool === 'Notes Generator' ? (
+            <NotesGenerator onBack={() => setActiveTool(null)} />
+          ) : activeTool === 'GPA Calculator' ? (
+            <GPACalculator onBack={() => setActiveTool(null)} />
+          ) : activeTool === 'CV Builder' ? (
+            <CVBuilder onBack={() => setActiveTool(null)} />
+          ) : activeTool === 'Currency Exchange' ? (
+            <CurrencyExchange onBack={() => setActiveTool(null)} />
+          ) : activeTool === 'Invoice Generator' ? (
+            <InvoiceGenerator onBack={() => setActiveTool(null)} />
+          ) : activeTool === 'Receipt Generator' ? (
+            <ReceiptGenerator onBack={() => setActiveTool(null)} />
+          ) : activeTool === 'AI Chatbot' ? (
+  <AIChatbot onBack={() => setActiveTool(null)} />
+) : activeTool === 'AI Image Generator' ? (
             <AIImageGenerator onBack={() => setActiveTool(null)} />
           ) : activeTool === 'AI Translator' ? (
             <AITranslator onBack={() => setActiveTool(null)} />
@@ -634,6 +901,10 @@ function App() {
             <ImageToPDF onBack={() => setActiveTool(null)} />
           ) : activeTool === 'PDF to Image' ? (
             <PDFToImage onBack={() => setActiveTool(null)} />
+          ) : activeTool === 'Passport Photo Maker' ? (
+            <PassportPhotoMaker onBack={() => setActiveTool(null)} />
+          ) : activeTool === 'WebM to MP4' ? (
+            <WebMToMP4 onBack={() => setActiveTool(null)} />
           ) : activeTool === 'Image Converter' ? (
             <ImageConverter onBack={() => setActiveTool(null)} />
           ) : activeTool === 'Image Resizer' ? (
@@ -647,6 +918,8 @@ function App() {
           ) : (
           <>
 
+          {activeCategory === 'Home' && (
+          <>
           <section className="hero">
             <div className="hero-orb orb-one" />
             <div className="hero-orb orb-two" />
@@ -703,6 +976,8 @@ function App() {
               </div>
             </div>
           </section>
+          </>
+          )}
 
           {notice && (
             <div className="notice" role="status">
@@ -713,6 +988,8 @@ function App() {
             </div>
           )}
 
+          {activeCategory === 'Home' && (
+          <>
           <section className="stats-row" aria-label="Platform highlights">
             <div className="stat-item">
               <div className="stat-icon stat-violet"><Layers size={19} /></div>
@@ -727,7 +1004,10 @@ function App() {
               <div><strong>Built for you</strong><span>Simple and accessible</span></div>
             </div>
           </section>
+          </>
+          )}
 
+          {activeCategory !== 'Home' && (
           <section className="tools-section" id="tools">
             <div className="section-heading">
               <div>
@@ -780,15 +1060,6 @@ function App() {
                       </button>
                     </div>
 
-                    {tool.premium && (
-                      <span
-                        className="premium-indicator"
-                        title="Requires ZanaHub Pro"
-                        aria-label="Requires ZanaHub Pro"
-                      >
-                        <Crown size={12} />
-                      </span>
-                    )}
                   </article>
                 );
               })}
@@ -810,7 +1081,51 @@ function App() {
               </div>
             )}
           </section>
+          )}
 
+          {activeCategory === 'Home' && (
+          <section className="home-showcase">
+            <div className="home-showcase-copy">
+              <div className="section-kicker">ONE WORKSPACE, MANY POSSIBILITIES</div>
+              <h2>Your everyday work, <span>made simpler.</span></h2>
+              <p>
+                ZanaHub brings practical digital tools together in one place.
+                Organise documents, prepare images, explore AI assistance, and
+                make everyday tasks easier without jumping between different
+                websites.
+              </p>
+              <div className="showcase-benefits">
+                <div><FileText size={18} /><span>Documents made easier</span></div>
+                <div><Image size={18} /><span>Image tools in one hub</span></div>
+                <div><Sparkles size={18} /><span>Helpful AI features</span></div>
+              </div>
+            </div>
+
+            <div className="showcase-visual" aria-label="Animated digital tools illustration">
+              <div className="showcase-glow" />
+              <div className="showcase-orbit showcase-orbit-one" />
+              <div className="showcase-orbit showcase-orbit-two" />
+              <div className="showcase-document document-main">
+                <div className="document-fold" />
+                <FileText size={30} />
+                <span>YOUR DOCUMENT</span>
+                <i /><i /><i />
+                <div className="document-check"><Check size={15} /></div>
+              </div>
+              <div className="showcase-float showcase-pdf">
+                <FileText size={19} /><span>PDF tools</span>
+              </div>
+              <div className="showcase-float showcase-image">
+                <Image size={19} /><span>Image tools</span>
+              </div>
+              <div className="showcase-float showcase-ai">
+                <Sparkles size={19} /><span>AI workspace</span>
+              </div>
+            </div>
+          </section>
+          )}
+
+          {activeCategory === 'Home' && (
           <section className="premium-banner">
             <div className="premium-art">
               <div className="premium-art-ring" />
@@ -835,6 +1150,7 @@ function App() {
               </button>
             </div>
           </section>
+          )}
 
           <footer className="footer">
             <a
@@ -842,7 +1158,10 @@ function App() {
               href="#home"
               onClick={() => {
                 setActivePage('discover');
+                setActiveCategory('Home');
                 setActiveTool(null);
+                setSearch('');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
             >
               zana<span>hub</span>

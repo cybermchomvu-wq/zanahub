@@ -2,12 +2,11 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
-import jwt from 'jsonwebtoken';
 import { GoogleGenAI } from '@google/genai';
 import { InferenceClient } from '@huggingface/inference';
 import db from './database.js';
 import { registerAuthRoutes } from './auth.js';
-import { registerPaymentRoutes } from './payments.js';
+import { registerMediaRoutes } from './media.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -19,7 +18,7 @@ app.use(cors({
 app.use(express.json({ limit: '1mb' }));
 
 registerAuthRoutes(app, db);
-registerPaymentRoutes(app, db);
+registerMediaRoutes(app);
 
 const aiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -49,87 +48,7 @@ app.get('/api/health', (_req, res) => {
 });
 
 
-async function requirePro(req, res, next) {
-  const authorization = req.headers.authorization || '';
-  const [scheme, token] = authorization.split(' ');
-
-  if (scheme !== 'Bearer' || !token) {
-    return res.status(401).json({
-      error: 'Please sign in to access ZanaHub Pro.',
-    });
-  }
-
-  let userId;
-
-  try {
-    const payload = jwt.verify(token, process.env.AUTH_JWT_SECRET, {
-      issuer: 'zanahub-api',
-      audience: 'zanahub-app',
-    });
-
-    userId = Number(payload.sub);
-
-    if (!Number.isSafeInteger(userId) || userId < 1) {
-      return res.status(401).json({
-        error: 'Your login session is invalid. Please sign in again.',
-      });
-    }
-  } catch {
-    return res.status(401).json({
-      error: 'Your login session is invalid or expired. Please sign in again.',
-    });
-  }
-
-  try {
-    const result = await db.query(`
-      SELECT plan, status, starts_at, expires_at
-      FROM subscriptions
-      WHERE user_id = $1
-      ORDER BY id DESC
-      LIMIT 1
-    `, [userId]);
-
-    const subscription = result.rows[0];
-    const now = Date.now();
-
-    const startsAt = subscription?.starts_at
-      ? new Date(subscription.starts_at).getTime()
-      : null;
-
-    const expiresAt = subscription?.expires_at
-      ? new Date(subscription.expires_at).getTime()
-      : null;
-
-    const activePro = Boolean(
-      subscription &&
-      subscription.plan === 'pro' &&
-      subscription.status === 'active' &&
-      expiresAt !== null &&
-      Number.isFinite(expiresAt) &&
-      expiresAt > now &&
-      (startsAt === null ||
-        (Number.isFinite(startsAt) && startsAt <= now))
-    );
-
-    if (!activePro) {
-      return res.status(403).json({
-        error: 'This AI tool requires an active ZanaHub Pro subscription.',
-        code: 'PRO_REQUIRED',
-      });
-    }
-
-    req.userId = userId;
-    return next();
-  } catch (error) {
-    console.error('Pro access verification failed:', error.message);
-
-    return res.status(500).json({
-      error: 'Could not verify your subscription. Please try again.',
-    });
-  }
-}
-
-app.post('/api/ai/write', aiLimiter, requirePro, async (req, res) => {
+app.post('/api/ai/write', aiLimiter, async (req, res) => {
   try {
     if (!process.env.GEMINI_API_KEY) {
       return res.status(503).json({
@@ -195,7 +114,84 @@ app.post('/api/ai/write', aiLimiter, requirePro, async (req, res) => {
 });
 
 
-app.post('/api/ai/image', imageLimiter, requirePro, async (req, res) => {
+app.post('/api/ai/chat', aiLimiter, async (req, res) => {
+  try {
+    if (!process.env.GEMINI_API_KEY) {
+      return res.status(503).json({
+        error: 'AI is not configured yet.',
+      });
+    }
+
+    const { messages } = req.body || {};
+
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return res.status(400).json({
+        error: 'Send a message to start the conversation.',
+      });
+    }
+
+    if (messages.length > 30) {
+      return res.status(400).json({
+        error: 'This conversation is too long. Start a new chat.',
+      });
+    }
+
+    const validMessages = messages.every(
+      (message) =>
+        message &&
+        ['user', 'assistant'].includes(message.role) &&
+        typeof message.content === 'string' &&
+        message.content.trim().length > 0 &&
+        message.content.length <= 5000
+    );
+
+    if (!validMessages || messages[messages.length - 1].role !== 'user') {
+      return res.status(400).json({
+        error: 'Please send a valid user message.',
+      });
+    }
+
+    const conversation = messages.map((message) => ({
+      role: message.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: message.content.trim() }],
+    }));
+
+    const ai = new GoogleGenAI({
+      apiKey: process.env.GEMINI_API_KEY,
+    });
+
+    const response = await ai.models.generateContent({
+      model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
+      contents: conversation,
+      config: {
+        systemInstruction:
+          'You are ZanaHub AI, a helpful general-purpose assistant. ' +
+          'Answer clearly and accurately. Adapt to the user’s language. ' +
+          'Use conversation history when relevant. If you are unsure, say so.',
+        maxOutputTokens: 1500,
+      },
+    });
+
+    const text = response.text;
+
+    if (!text) {
+      return res.status(502).json({
+        error: 'The AI returned an empty response. Please try again.',
+      });
+    }
+
+    return res.json({ text });
+  } catch (error) {
+    console.error('AI chat request failed:', error.message);
+
+    return res.status(502).json({
+      error: 'The chatbot request failed. Check the AI provider configuration and usage limits.',
+    });
+  }
+});
+
+
+app.post('/api/ai/image', imageLimiter, async (req, res) => {
   try {
     if (!process.env.HF_TOKEN) {
       return res.status(503).json({
