@@ -8,6 +8,7 @@ import { registerAuthRoutes } from './auth.js';
 import { registerMediaRoutes } from './media.js';
 
 const app = express();
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3001;
 
 const allowedOrigins = new Set([
@@ -308,7 +309,6 @@ app.post('/api/ai/image', imageLimiter, async (req, res) => {
       body: JSON.stringify({
         prompt: `${prompt.trim()}. Compose the image in ${aspectRatio} aspect ratio.`,
         steps: 4,
-        seed: Math.floor(Math.random() * 1_000_000_000) + 1,
       }),
       signal: AbortSignal.timeout(120_000),
     });
