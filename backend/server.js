@@ -3,7 +3,6 @@ import express from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import { GoogleGenAI } from '@google/genai';
-import { InferenceClient } from '@huggingface/inference';
 import db from './database.js';
 import { registerAuthRoutes } from './auth.js';
 import { registerMediaRoutes } from './media.js';
@@ -262,11 +261,15 @@ app.post('/api/ai/chat', aiLimiter, async (req, res) => {
 });
 
 
+
 app.post('/api/ai/image', imageLimiter, async (req, res) => {
   try {
-    if (!process.env.HF_TOKEN) {
+    const accountId = process.env.CLOUDFLARE_ACCOUNT_ID?.trim();
+    const apiToken = process.env.CLOUDFLARE_API_TOKEN?.trim();
+
+    if (!accountId || !apiToken) {
       return res.status(503).json({
-        error: 'Hugging Face is not configured. Check the backend environment.',
+        error: 'Cloudflare image generation is not configured yet.',
       });
     }
 
@@ -292,30 +295,85 @@ app.post('/api/ai/image', imageLimiter, async (req, res) => {
       });
     }
 
-    const client = new InferenceClient(process.env.HF_TOKEN);
+    const model = '@cf/black-forest-labs/flux-1-schnell';
+    const endpoint =
+      `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId)}/ai/run/${model}`;
 
-    const imageBlob = await client.textToImage({
-      model: 'black-forest-labs/FLUX.1-schnell',
-      provider: 'auto',
-      inputs: `${prompt.trim()}. Compose the image in ${aspectRatio} aspect ratio.`,
-      parameters: {
-        num_inference_steps: 4,
+    const cloudflareResponse = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiToken}`,
+        'Content-Type': 'application/json',
       },
+      body: JSON.stringify({
+        prompt: `${prompt.trim()}. Compose the image in ${aspectRatio} aspect ratio.`,
+        steps: 4,
+        seed: Math.floor(Math.random() * 1_000_000_000) + 1,
+      }),
+      signal: AbortSignal.timeout(120_000),
     });
 
-    const imageBuffer = Buffer.from(await imageBlob.arrayBuffer());
-    const mimeType = imageBlob.type || 'image/jpeg';
+    const providerData = await cloudflareResponse.json().catch(() => null);
 
-    res.json({
-      image: imageBuffer.toString('base64'),
-      mimeType,
-      text: 'Image generated with Hugging Face.',
+    if (!cloudflareResponse.ok || providerData?.success === false) {
+      const providerMessage = Array.isArray(providerData?.errors)
+        ? providerData.errors
+            .map((item) => item.message || item.code)
+            .filter(Boolean)
+            .join('; ')
+        : '';
+
+      console.error(
+        'Cloudflare image request failed:',
+        cloudflareResponse.status,
+        providerMessage || cloudflareResponse.statusText,
+      );
+
+      if (cloudflareResponse.status === 429) {
+        return res.status(429).json({
+          error: 'Cloudflare image usage limit or capacity reached. Please try again later.',
+        });
+      }
+
+      if (cloudflareResponse.status === 403) {
+        return res.status(503).json({
+          error: 'Cloudflare rejected the request. Check the Workers AI token permissions and account access.',
+        });
+      }
+
+      return res.status(502).json({
+        error: 'Cloudflare could not generate this image. Please try again.',
+      });
+    }
+
+    const image = providerData?.result?.image;
+
+    if (typeof image !== 'string' || image.length === 0) {
+      console.error('Cloudflare returned no image data.');
+
+      return res.status(502).json({
+        error: 'Cloudflare returned an empty image. Please try again.',
+      });
+    }
+
+    return res.json({
+      image,
+      mimeType: 'image/jpeg',
+      text: 'Image generated with Cloudflare Workers AI.',
     });
   } catch (error) {
-    console.error('Hugging Face image generation failed:', error.message);
+    const timedOut =
+      error.name === 'TimeoutError' || error.name === 'AbortError';
 
-    res.status(502).json({
-      error: 'Image generation failed. Check the Hugging Face model access, available credits, and provider limits.',
+    console.error(
+      'Cloudflare Workers AI image generation failed:',
+      timedOut ? 'Request timed out.' : error.message,
+    );
+
+    return res.status(timedOut ? 504 : 502).json({
+      error: timedOut
+        ? 'Image generation took too long. Please try again.'
+        : 'Image generation failed. Check the Cloudflare configuration and try again.',
     });
   }
 });
