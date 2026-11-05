@@ -1,6 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { App as CapacitorApp } from '@capacitor/app';
 import AuthPanel from './AuthPanel';
 import { AccountDashboard } from './AccountPages';
+import Workspace from './Workspace';
 import {
   Search,
   MessageCircle,
@@ -29,6 +32,7 @@ import {
   Palette,
 } from 'lucide-react';
 import './App.css';
+import VisitorCounter from './VisitorCounter';
 import InfoPage from './InfoPage';
 import AIChatbot from './AIChatbot';
 import AIWritingAssistant from './AIWritingAssistant';
@@ -36,6 +40,7 @@ import AISummarizer from './AISummarizer';
 import AITranslator from './AITranslator';
 import AIImageGenerator from './AIImageGenerator';
 import ImageCompressor from './ImageCompressor';
+import BackgroundRemover from './BackgroundRemover';
 import PDFMerger from './PDFMerger';
 import PDFSplitter from './PDFSplitter';
 import ImageResizer from './ImageResizer';
@@ -61,6 +66,7 @@ import LogoMaker from './LogoMaker';
 import AICodeExplainer from './AICodeExplainer';
 import AIBugFinder from './AIBugFinder';
 import CodePlayground from './CodePlayground';
+import './mobile-responsive.css';
 
 const categories = [
   { name: 'Home', icon: Zap },
@@ -209,6 +215,15 @@ const tools = [
     icon: Image,
     color: 'pink',
     tag: null,
+    premium: false,
+  },
+  {
+    name: 'Background Remover',
+    description: 'Remove image backgrounds with AI and download transparent PNGs.',
+    category: 'Image Tools',
+    icon: Image,
+    color: 'violet',
+    tag: 'NEW',
     premium: false,
   },
   {
@@ -368,12 +383,192 @@ const tools = [
   },
 ];
 
+
+const routableTools = new Set([
+  'AI Chatbot',
+  'AI Summarizer',
+  'AI Writing Assistant',
+  'AI Image Generator',
+  'AI Translator',
+  'AI Bug Finder',
+  'AI Code Explainer',
+  'Code Playground',
+  'Logo Maker',
+  'Color Palette Generator',
+  'JSON Formatter',
+  'Passport Photo Maker',
+  'Profit Calculator',
+  'Scientific Calculator',
+  'Notes Generator',
+  'GPA Calculator',
+  'CV Builder',
+  'Currency Exchange',
+  'Invoice Generator',
+  'Receipt Generator',
+  'Image Resizer',
+  'WebM to MP4',
+  'Image Converter',
+  'Image Compressor',
+  'Background Remover',
+  'Excel to PDF',
+  'PDF to Word',
+  'Word to PDF',
+  'Image to PDF',
+  'PDF to Image',
+  'PDF Splitter',
+  'PDF Merger',
+]);
+
+function toolSlug(name) {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
+function getInitialToolFromPath() {
+  if (Capacitor.isNativePlatform()) return null;
+
+  const match = window.location.pathname.match(/^\/tools\/([^/]+)\/?$/i);
+  if (!match) return null;
+
+  let slug;
+  try {
+    slug = decodeURIComponent(match[1]).toLowerCase();
+  } catch {
+    return null;
+  }
+
+  const matchedTool = tools.find((tool) => toolSlug(tool.name) === slug);
+  const toolName =
+    slug === 'pdf-toolkit' ? 'PDF Merger' : matchedTool?.name;
+
+  return routableTools.has(toolName) ? toolName : null;
+}
+
+function getPathForView(view) {
+  if (view.activeTool && routableTools.has(view.activeTool)) {
+    return `/tools/${toolSlug(view.activeTool)}`;
+  }
+
+  return '/';
+}
+
 function App() {
   const [activeCategory, setActiveCategory] = useState('Home');
   const [search, setSearch] = useState('');
+  const [homeSearchOpen, setHomeSearchOpen] = useState(false);
+  const homeSearchRef = useRef(null);
+
+  useEffect(() => {
+    function handleHomeSearchOutsideClick(event) {
+      if (
+        homeSearchRef.current &&
+        !homeSearchRef.current.contains(event.target)
+      ) {
+        setHomeSearchOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleHomeSearchOutsideClick);
+
+    return () => {
+      document.removeEventListener('mousedown', handleHomeSearchOutsideClick);
+    };
+  }, []);
+
   const [menuOpen, setMenuOpen] = useState(false);
   const [notice, setNotice] = useState('');
-  const [activeTool, setActiveTool] = useState(null);
+  const [commandOpen, setCommandOpen] = useState(false);
+  const [commandQuery, setCommandQuery] = useState('');
+  const [commandSelected, setCommandSelected] = useState(0);
+  const commandInputRef = useRef(null);
+
+  useEffect(() => {
+    function handleCommandShortcut(event) {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setCommandQuery('');
+        setCommandSelected(0);
+        setCommandOpen((open) => !open);
+      }
+
+      if (event.key === 'Escape') {
+        setCommandOpen(false);
+      }
+    }
+
+    window.addEventListener('keydown', handleCommandShortcut);
+    return () => window.removeEventListener('keydown', handleCommandShortcut);
+  }, []);
+
+  useEffect(() => {
+    if (!commandOpen) return;
+
+    const frame = requestAnimationFrame(() => {
+      commandInputRef.current?.focus();
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [commandOpen]);
+
+  useEffect(() => {
+    setCommandSelected(0);
+  }, [commandQuery]);
+  const [theme, setTheme] = useState(() => {
+    const allowedThemes = ['midnight', 'light', 'ocean', 'emerald', 'rose'];
+    const stored = localStorage.getItem('zanahub_theme');
+    return allowedThemes.includes(stored) ? stored : 'midnight';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('zanahub_theme', theme);
+  }, [theme]);
+
+  const [recentTools, setRecentTools] = useState(() => {
+    try {
+      const recent = JSON.parse(
+        localStorage.getItem('zanahub_recent_tools') || '[]'
+      );
+      return Array.isArray(recent)
+        ? recent.filter((name) => typeof name === 'string').slice(0, 8)
+        : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('zanahub_recent_tools', JSON.stringify(recentTools));
+  }, [recentTools]);
+
+  const [savedTools, setSavedTools] = useState(() => {
+    try {
+      const saved = JSON.parse(
+        localStorage.getItem('zanahub_saved_tools') || '[]'
+      );
+      return Array.isArray(saved)
+        ? saved.filter((name) => typeof name === 'string')
+        : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('zanahub_saved_tools', JSON.stringify(savedTools));
+  }, [savedTools]);
+
+  function toggleSavedTool(toolName) {
+    setSavedTools((current) =>
+      current.includes(toolName)
+        ? current.filter((name) => name !== toolName)
+        : [...current, toolName]
+    );
+  }
+  const [activeTool, setActiveTool] = useState(getInitialToolFromPath);
   const [activePage, setActivePage] = useState('discover');
   const [accountDetails, setAccountDetails] = useState(null);
   const [currentUser, setCurrentUser] = useState(() => {
@@ -405,6 +600,7 @@ function App() {
     localStorage.removeItem('zanahub_token');
     localStorage.removeItem('zanahub_user');
     setCurrentUser(null);
+    window.dispatchEvent(new Event('zanahub-auth-changed'));
   }
 
   useEffect(() => {
@@ -454,9 +650,156 @@ function App() {
     };
   }, [currentUser?.id]);
 
+
+  // Save internal screens in browser history so Back returns to the
+  // previous tool or page rather than leaving ZanaHub.
+  const navigationReadyRef = useRef(false);
+  const navigationSnapshotKey = JSON.stringify({
+    activeCategory,
+    activeTool,
+    activePage,
+  });
+
+  useEffect(() => {
+    const view = JSON.parse(navigationSnapshotKey);
+    const current = window.history.state;
+    const currentState =
+      current && typeof current === 'object' ? current : {};
+
+    if (!navigationReadyRef.current) {
+      window.history.replaceState(
+        {
+          ...currentState,
+          zanaHubNavigation: true,
+          zanaHubDepth: 0,
+          zanaHubView: view,
+        },
+        '',
+        window.location.href,
+      );
+
+      navigationReadyRef.current = true;
+      return;
+    }
+
+    const savedView = currentState.zanaHubNavigation
+      ? JSON.stringify(currentState.zanaHubView)
+      : null;
+
+    // A popstate event has already moved history to this view.
+    // Don't create a duplicate entry when React restores that view.
+    if (savedView === navigationSnapshotKey) return;
+
+    const previousDepth = currentState.zanaHubNavigation
+      ? Math.max(0, Number(currentState.zanaHubDepth) || 0)
+      : 0;
+
+    window.history.pushState(
+      {
+        ...currentState,
+        zanaHubNavigation: true,
+        zanaHubDepth: previousDepth + 1,
+        zanaHubView: view,
+      },
+      '',
+      window.location.href,
+    );
+  }, [navigationSnapshotKey]);
+
+  useEffect(() => {
+    function restorePreviousView(event) {
+      const view = event.state?.zanaHubNavigation
+        ? event.state.zanaHubView
+        : null;
+
+      if (!view) return;
+
+      setActiveCategory(view.activeCategory || 'Home');
+      setActiveTool(view.activeTool ?? null);
+      setActivePage(view.activePage || 'discover');
+      setMenuOpen(false);
+      setNotice('');
+
+      window.scrollTo({ top: 0, behavior: 'auto' });
+    }
+
+    window.addEventListener('popstate', restorePreviousView);
+
+    return () => {
+      window.removeEventListener('popstate', restorePreviousView);
+    };
+  }, []);
+
+  // Android Back follows the same saved navigation history.
+  // At the starting screen, Back exits the Android app.
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return undefined;
+
+    let listenerHandle;
+    let disposed = false;
+
+    CapacitorApp.addListener('backButton', () => {
+      const state = window.history.state;
+
+      // Close the sign-in/register window before considering app exit.
+      if (state?.zanaHubAuthPanel === true) {
+        window.history.back();
+        return;
+      }
+
+      const depth = Number(state?.zanaHubDepth) || 0;
+
+      if (state?.zanaHubNavigation && depth > 0) {
+        window.history.back();
+      } else {
+        void CapacitorApp.exitApp();
+      }
+    })
+      .then((handle) => {
+        if (disposed) {
+          void handle.remove();
+        } else {
+          listenerHandle = handle;
+        }
+      })
+      .catch((error) => {
+        console.error('Could not register Android Back handling:', error);
+      });
+
+    return () => {
+      disposed = true;
+      if (listenerHandle) void listenerHandle.remove();
+    };
+  }, []);
+
+  function goBack() {
+    const state = window.history.state;
+    const depth = Number(state?.zanaHubDepth) || 0;
+
+    if (state?.zanaHubNavigation && depth > 0) {
+      window.history.back();
+      return;
+    }
+
+    // Safe fallback if a component opens a screen without a history entry.
+    if (activeTool) {
+      setActiveTool(null);
+    } else if (activePage !== 'discover') {
+      setActivePage('discover');
+      setActiveTool(null);
+    } else if (activeCategory !== 'Home') {
+      setActiveCategory('Home');
+      setSearch('');
+    }
+  }
+
   const filteredTools = tools.filter((tool) => {
     const matchesCategory =
-      activeCategory === 'All Tools' || tool.category === activeCategory;
+      activePage === 'recent'
+        ? recentTools.includes(tool.name)
+        : activePage === 'saved'
+          ? savedTools.includes(tool.name)
+          : activeCategory === 'All Tools' || tool.category === activeCategory;
 
     const matchesSearch =
       tool.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -466,9 +809,27 @@ function App() {
     return matchesCategory && matchesSearch;
   });
 
+  const homeSearchResults = (
+    search.trim()
+      ? tools.filter((tool) => {
+          const query = search.trim().toLowerCase();
+          return (
+            tool.name.toLowerCase().includes(query) ||
+            tool.description.toLowerCase().includes(query) ||
+            tool.category.toLowerCase().includes(query)
+          );
+        })
+      : tools.slice(0, 6)
+  ).slice(0, 6);
+
 
 
   function openTool(tool) {
+    setRecentTools((current) => [
+      tool.name,
+      ...current.filter((name) => name !== tool.name),
+    ].slice(0, 8));
+    setActivePage('discover');
   if (tool.name === 'Logo Maker') {
     setNotice('');
     setActiveTool('Logo Maker');
@@ -657,6 +1018,14 @@ function App() {
       return;
     }
 
+    if (tool.name === 'Background Remover') {
+      setNotice('');
+      setActiveTool('Background Remover');
+      setMenuOpen(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
     if (tool.name === 'Excel to PDF') {
       setNotice('');
       setActiveTool('Excel to PDF');
@@ -717,8 +1086,27 @@ function App() {
     );
   }
 
+  const commandResults = [...new Map(
+    [
+      ...recentTools.map((name) => tools.find((tool) => tool.name === name)),
+      ...savedTools.map((name) => tools.find((tool) => tool.name === name)),
+      ...tools,
+    ]
+      .filter(Boolean)
+      .map((tool) => [tool.name, tool])
+  ).values()].filter((tool) => {
+    const query = commandQuery.trim().toLowerCase();
+
+    return (
+      !query ||
+      tool.name.toLowerCase().includes(query) ||
+      tool.description.toLowerCase().includes(query) ||
+      tool.category.toLowerCase().includes(query)
+    );
+  }).slice(0, 12);
+
   return (
-    <div className="app-shell">
+    <div className="app-shell" data-theme={theme}>
       <aside className={`sidebar ${menuOpen ? 'sidebar-open' : ''}`}>
         <a className="brand" href="#home" onClick={() => setMenuOpen(false)}>
           <span className="brand-mark">
@@ -763,9 +1151,10 @@ function App() {
         <div className="sidebar-label">YOUR ACCOUNT</div>
 
         <button
-          className="category-link"
+          className={`category-link ${activePage === 'workspace' ? 'active' : ''}`}
           onClick={() => {
-            setActivePage('account');
+            setActivePage('workspace');
+            setActiveTool(null);
             setMenuOpen(false);
             setNotice('');
           }}
@@ -775,12 +1164,77 @@ function App() {
         </button>
 
         <button
-          className="category-link"
-          onClick={() => setNotice('Your saved tools feature is coming soon.')}
+          className={`category-link ${activePage === 'saved' ? 'active' : ''}`}
+          onClick={() => {
+            setActivePage('saved');
+            setActiveTool(null);
+            setActiveCategory('All Tools');
+            setSearch('');
+            setMenuOpen(false);
+            setNotice('');
+          }}
         >
           <Heart size={18} />
           <span>Saved Tools</span>
+          {savedTools.length > 0 && (
+            <span className="saved-tools-count">{savedTools.length}</span>
+          )}
         </button>
+
+
+        <button
+          className={`category-link ${activePage === 'recent' ? 'active' : ''}`}
+          onClick={() => {
+            setActivePage('recent');
+            setActiveTool(null);
+            setActiveCategory('All Tools');
+            setSearch('');
+            setMenuOpen(false);
+            setNotice('');
+          }}
+        >
+          <span className="recent-tools-icon" aria-hidden="true">↻</span>
+          <span>Recently Used</span>
+          {recentTools.length > 0 && (
+            <span className="saved-tools-count">{recentTools.length}</span>
+          )}
+        </button>
+
+        <div className="sidebar-divider" />
+
+        <div className="sidebar-label">PERSONALIZATION</div>
+
+        <div className="theme-studio">
+          <div className="theme-studio-heading">
+            <Palette size={17} />
+            <span>Theme Studio</span>
+          </div>
+
+          <div className="theme-options">
+            {[
+              { id: 'midnight', name: 'Midnight', color: '#9b7bff' },
+              { id: 'light', name: 'Light', color: '#6478d9' },
+              { id: 'ocean', name: 'Ocean', color: '#35bde8' },
+              { id: 'emerald', name: 'Emerald', color: '#35c995' },
+              { id: 'rose', name: 'Rose', color: '#ed78b5' },
+            ].map((item) => (
+              <button
+                key={item.id}
+                className={`theme-option ${theme === item.id ? 'selected' : ''}`}
+                onClick={() => setTheme(item.id)}
+                aria-pressed={theme === item.id}
+                title={`${item.name} theme`}
+              >
+                <span
+                  className="theme-swatch"
+                  style={{ background: item.color }}
+                />
+                <span>{item.name}</span>
+                {theme === item.id && <span className="theme-check">✓</span>}
+              </button>
+            ))}
+          </div>
+        </div>
 
         <div className="sidebar-bottom">
           <div className="sidebar-glow" />
@@ -794,6 +1248,128 @@ function App() {
           aria-label="Close menu"
           onClick={() => setMenuOpen(false)}
         />
+      )}
+
+      {commandOpen && (
+        <div
+          className="command-overlay"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setCommandOpen(false);
+            }
+          }}
+        >
+          <section
+            className="command-palette"
+            role="dialog"
+            aria-modal="true"
+            aria-label="ZanaHub quick search"
+          >
+            <div className="command-search-row">
+              <Search size={21} />
+              <input
+                ref={commandInputRef}
+                type="text"
+                value={commandQuery}
+                onChange={(event) => setCommandQuery(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'ArrowDown') {
+                    event.preventDefault();
+                    setCommandSelected((current) =>
+                      Math.min(current + 1, commandResults.length - 1)
+                    );
+                  }
+
+                  if (event.key === 'ArrowUp') {
+                    event.preventDefault();
+                    setCommandSelected((current) =>
+                      Math.max(current - 1, 0)
+                    );
+                  }
+
+                  if (event.key === 'Enter' && commandResults[commandSelected]) {
+                    event.preventDefault();
+                    const selectedTool = commandResults[commandSelected];
+                    setCommandOpen(false);
+                    setCommandQuery('');
+                    openTool(selectedTool);
+                  }
+                }}
+                placeholder="Search tools, categories..."
+                aria-label="Search ZanaHub tools"
+              />
+              <button
+                type="button"
+                className="command-close"
+                onClick={() => setCommandOpen(false)}
+                aria-label="Close search"
+              >
+                <X size={19} />
+              </button>
+            </div>
+
+            <div className="command-results">
+              <div className="command-results-heading">
+                <span>QUICK ACCESS</span>
+                <span>{commandResults.length} RESULTS</span>
+              </div>
+
+              {commandResults.length > 0 ? (
+                commandResults.map((tool, index) => {
+                  const Icon = tool.icon;
+
+                  return (
+                    <button
+                      type="button"
+                      key={tool.name}
+                      className={`command-result ${
+                        commandSelected === index ? 'selected' : ''
+                      }`}
+                      onMouseEnter={() => setCommandSelected(index)}
+                      onClick={() => {
+                        setCommandOpen(false);
+                        setCommandQuery('');
+                        openTool(tool);
+                      }}
+                    >
+                      <span className={`command-result-icon icon-${tool.color}`}>
+                        <Icon size={19} />
+                      </span>
+
+                      <span className="command-result-copy">
+                        <strong>{tool.name}</strong>
+                        <small>{tool.category}</small>
+                      </span>
+
+                      <span className="command-result-badges">
+                        {recentTools.includes(tool.name) && (
+                          <span className="command-badge recent">RECENT</span>
+                        )}
+                        {savedTools.includes(tool.name) && (
+                          <span className="command-badge saved">SAVED</span>
+                        )}
+                      </span>
+
+                      <ChevronRight size={17} className="command-result-arrow" />
+                    </button>
+                  );
+                })
+              ) : (
+                <div className="command-empty">
+                  <Search size={25} />
+                  <strong>No tools found</strong>
+                  <span>Try searching for another tool or category.</span>
+                </div>
+              )}
+            </div>
+
+            <div className="command-footer">
+              <span><kbd>↑</kbd> <kbd>↓</kbd> Navigate</span>
+              <span><kbd>↵</kbd> Open tool</span>
+              <span><kbd>Esc</kbd> Close</span>
+            </div>
+          </section>
+        </div>
       )}
 
       <main className="main-content" id="home">
@@ -811,6 +1387,21 @@ function App() {
           </div>
 
           <div className="topbar-right">
+            <button
+              className="command-trigger"
+              type="button"
+              onClick={() => {
+                setCommandQuery('');
+                setCommandSelected(0);
+                setCommandOpen(true);
+              }}
+              aria-label="Open quick search"
+            >
+              <Search size={16} />
+              <span>Quick search</span>
+              <kbd>Ctrl K</kbd>
+            </button>
+
             <div className="status-indicator">
               <span /> All systems ready
             </div>
@@ -847,74 +1438,78 @@ function App() {
                 setActiveTool(null);
               }}
             />
+          ) : activePage === 'workspace' ? (
+            <Workspace currentUser={currentUser} />
           ) : activePage === 'account' ? (
             <AccountDashboard
               currentUser={currentUser}
               accountDetails={accountDetails}
-              onBack={() => setActivePage('discover')}
+              onBack={goBack}
             />
           ) : activeTool === 'AI Bug Finder' ? (
-            <AIBugFinder onBack={() => setActiveTool(null)} />
+            <AIBugFinder onBack={goBack} />
           ) : activeTool === 'AI Code Explainer' ? (
-            <AICodeExplainer onBack={() => setActiveTool(null)} />
+            <AICodeExplainer onBack={goBack} />
           ) : activeTool === 'Code Playground' ? (
-            <CodePlayground onBack={() => setActiveTool(null)} />
+            <CodePlayground onBack={goBack} />
           ) : activeTool === 'Logo Maker' ? (
-    <LogoMaker onBack={() => setActiveTool(null)} />
+    <LogoMaker onBack={goBack} />
 ) : activeTool === 'Color Palette Generator' ? (
-            <ColorPaletteGenerator onBack={() => setActiveTool(null)} />
+            <ColorPaletteGenerator onBack={goBack} />
           ) : activeTool === 'JSON Formatter' ? (
-            <JSONFormatter onBack={() => setActiveTool(null)} />
+            <JSONFormatter onBack={goBack} />
           ) : activeTool === 'Profit Calculator' ? (
-            <ProfitCalculator onBack={() => setActiveTool(null)} />
+            <ProfitCalculator onBack={goBack} />
           ) : activeTool === 'Scientific Calculator' ? (
-            <ScientificCalculator onBack={() => setActiveTool(null)} />
+            <ScientificCalculator onBack={goBack} />
           ) : activeTool === 'Notes Generator' ? (
-            <NotesGenerator onBack={() => setActiveTool(null)} />
+            <NotesGenerator onBack={goBack} />
           ) : activeTool === 'GPA Calculator' ? (
-            <GPACalculator onBack={() => setActiveTool(null)} />
+            <GPACalculator onBack={goBack} />
           ) : activeTool === 'CV Builder' ? (
-            <CVBuilder onBack={() => setActiveTool(null)} />
+            <CVBuilder onBack={goBack} />
           ) : activeTool === 'Currency Exchange' ? (
-            <CurrencyExchange onBack={() => setActiveTool(null)} />
+            <CurrencyExchange onBack={goBack} />
           ) : activeTool === 'Invoice Generator' ? (
-            <InvoiceGenerator onBack={() => setActiveTool(null)} />
+            <InvoiceGenerator onBack={goBack} />
           ) : activeTool === 'Receipt Generator' ? (
-            <ReceiptGenerator onBack={() => setActiveTool(null)} />
+            <ReceiptGenerator onBack={goBack} />
           ) : activeTool === 'AI Chatbot' ? (
-  <AIChatbot onBack={() => setActiveTool(null)} />
+  <AIChatbot onBack={goBack} />
 ) : activeTool === 'AI Image Generator' ? (
-            <AIImageGenerator onBack={() => setActiveTool(null)} />
+            <AIImageGenerator onBack={goBack} />
           ) : activeTool === 'AI Translator' ? (
-            <AITranslator onBack={() => setActiveTool(null)} />
+            <AITranslator onBack={goBack} />
           ) : activeTool === 'AI Summarizer' ? (
-            <AISummarizer onBack={() => setActiveTool(null)} />
+            <AISummarizer onBack={goBack} />
           ) : activeTool === 'AI Writing Assistant' ? (
-            <AIWritingAssistant onBack={() => setActiveTool(null)} />
+            <AIWritingAssistant onBack={goBack} />
           ) : activeTool === 'Excel to PDF' ? (
-            <ExcelToPDF onBack={() => setActiveTool(null)} />
+            <ExcelToPDF onBack={goBack} />
           ) : activeTool === 'PDF to Word' ? (
-            <PDFToWord onBack={() => setActiveTool(null)} />
+            <PDFToWord onBack={goBack} />
           ) : activeTool === 'Word to PDF' ? (
-            <WordToPDF onBack={() => setActiveTool(null)} />
+            <WordToPDF onBack={goBack} />
           ) : activeTool === 'Image to PDF' ? (
-            <ImageToPDF onBack={() => setActiveTool(null)} />
+            <ImageToPDF onBack={goBack} />
           ) : activeTool === 'PDF to Image' ? (
-            <PDFToImage onBack={() => setActiveTool(null)} />
+            <PDFToImage onBack={goBack} />
           ) : activeTool === 'Passport Photo Maker' ? (
-            <PassportPhotoMaker onBack={() => setActiveTool(null)} />
+            <PassportPhotoMaker onBack={goBack} />
           ) : activeTool === 'WebM to MP4' ? (
-            <WebMToMP4 onBack={() => setActiveTool(null)} />
+            <WebMToMP4 onBack={goBack} />
           ) : activeTool === 'Image Converter' ? (
-            <ImageConverter onBack={() => setActiveTool(null)} />
+            <ImageConverter onBack={goBack} />
           ) : activeTool === 'Image Resizer' ? (
-            <ImageResizer onBack={() => setActiveTool(null)} />
+            <ImageResizer onBack={goBack} />
           ) : activeTool === 'PDF Merger' ? (
-            <PDFMerger onBack={() => setActiveTool(null)} />
+            <PDFMerger onBack={goBack} />
           ) : activeTool === 'PDF Splitter' ? (
-            <PDFSplitter onBack={() => setActiveTool(null)} />
+            <PDFSplitter onBack={goBack} />
           ) : activeTool === 'Image Compressor' ? (
-            <ImageCompressor onBack={() => setActiveTool(null)} />
+            <ImageCompressor onBack={goBack} />
+          ) : activeTool === 'Background Remover' ? (
+            <BackgroundRemover onBack={goBack} />
           ) : (
           <>
 
@@ -942,15 +1537,85 @@ function App() {
                 and your everyday life.
               </p>
 
-              <div className="hero-search">
-                <Search size={20} />
-                <input
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="What do you want to accomplish today?"
-                  aria-label="Search tools"
-                />
-                <kbd>SEARCH</kbd>
+              <div className="hero-search-container" ref={homeSearchRef}>
+                <div className="hero-search">
+                  <Search size={20} />
+                  <input
+                    value={search}
+                    onFocus={() => setHomeSearchOpen(true)}
+                    onChange={(event) => {
+                      setSearch(event.target.value);
+                      setHomeSearchOpen(true);
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Escape') {
+                        setHomeSearchOpen(false);
+                      }
+
+                      if (event.key === 'Enter' && homeSearchResults[0]) {
+                        event.preventDefault();
+                        openTool(homeSearchResults[0]);
+                        setSearch('');
+                        setHomeSearchOpen(false);
+                      }
+                    }}
+                    placeholder="What do you want to accomplish today?"
+                    aria-label="Search tools"
+                    aria-expanded={homeSearchOpen}
+                    aria-controls="home-search-results"
+                  />
+                  <kbd>SEARCH</kbd>
+                </div>
+
+                {homeSearchOpen && (
+                  <div
+                    className="hero-search-dropdown"
+                    id="home-search-results"
+                    role="listbox"
+                  >
+                    <div className="hero-search-dropdown-heading">
+                      {search.trim() ? 'SEARCH RESULTS' : 'POPULAR TOOLS'}
+                      <span>{homeSearchResults.length} TOOLS</span>
+                    </div>
+
+                    {homeSearchResults.length > 0 ? (
+                      homeSearchResults.map((tool) => {
+                        const ToolIcon = tool.icon;
+
+                        return (
+                          <button
+                            type="button"
+                            className="hero-search-result"
+                            key={tool.name}
+                            role="option"
+                            aria-selected="false"
+                            onMouseDown={(event) => event.preventDefault()}
+                            onClick={() => {
+                              openTool(tool);
+                              setSearch('');
+                              setHomeSearchOpen(false);
+                            }}
+                          >
+                            <span className={`hero-search-result-icon ${tool.color || ''}`}>
+                              <ToolIcon size={17} />
+                            </span>
+
+                            <span className="hero-search-result-info">
+                              <strong>{tool.name}</strong>
+                              <small>{tool.category}</small>
+                            </span>
+
+                            <ChevronRight size={16} className="hero-search-result-arrow" />
+                          </button>
+                        );
+                      })
+                    ) : (
+                      <div className="hero-search-empty">
+                        No tools found. Try another search.
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="hero-footnote">
@@ -1003,6 +1668,7 @@ function App() {
               <div className="stat-icon stat-green"><ShieldCheck size={19} /></div>
               <div><strong>Built for you</strong><span>Simple and accessible</span></div>
             </div>
+            <VisitorCounter />
           </section>
           </>
           )}
@@ -1012,12 +1678,29 @@ function App() {
             <div className="section-heading">
               <div>
                 <div className="section-kicker">THE TOOLBOX</div>
-                <h2>Explore your tools <span className="heading-period">.</span></h2>
-                <p>Find the right tool for whatever you're working on.</p>
+                <h2>
+                  {activePage === 'saved'
+                    ? 'Your saved tools'
+                    : activePage === 'recent'
+                      ? 'Recently used tools'
+                      : 'Explore your tools'}
+                  <span className="heading-period">.</span>
+                </h2>
+                <p>
+                  {activePage === 'saved'
+                    ? 'Your favourite tools, all in one place.'
+                    : activePage === 'recent'
+                      ? 'Pick up where you left off.'
+                      : 'Find the right tool for whatever you\'re working on.'}
+                </p>
               </div>
               <div className="tool-count">
                 <span>{filteredTools.length.toString().padStart(2, '0')}</span>
-                TOOLS SHOWN
+                {activePage === 'saved'
+                  ? 'TOOLS SAVED'
+                  : activePage === 'recent'
+                    ? 'RECENT TOOLS'
+                    : 'TOOLS SHOWN'}
               </div>
             </div>
 
@@ -1026,7 +1709,10 @@ function App() {
                 <button
                   key={category.name}
                   className={activeCategory === category.name ? 'active' : ''}
-                  onClick={() => setActiveCategory(category.name)}
+                  onClick={() => {
+                    setActiveCategory(category.name);
+                    setActivePage('discover');
+                  }}
                 >
                   {category.name}
                 </button>
@@ -1044,6 +1730,33 @@ function App() {
                         <Icon size={22} />
                       </div>
                       {tool.tag && <span className="tool-tag">{tool.tag}</span>}
+                      <button
+                        type="button"
+                        className={`save-tool-button ${
+                          savedTools.includes(tool.name) ? 'saved' : ''
+                        }`}
+                        aria-label={
+                          savedTools.includes(tool.name)
+                            ? `Remove ${tool.name} from saved tools`
+                            : `Save ${tool.name}`
+                        }
+                        aria-pressed={savedTools.includes(tool.name)}
+                        title={
+                          savedTools.includes(tool.name)
+                            ? 'Remove from saved tools'
+                            : 'Save tool'
+                        }
+                        onClick={() => toggleSavedTool(tool.name)}
+                      >
+                        <Heart
+                          size={17}
+                          fill={
+                            savedTools.includes(tool.name)
+                              ? 'currentColor'
+                              : 'none'
+                          }
+                        />
+                      </button>
                     </div>
 
                     <h3>{tool.name}</h3>
@@ -1068,12 +1781,25 @@ function App() {
             {filteredTools.length === 0 && (
               <div className="empty-state">
                 <Search size={30} />
-                <h3>No tools found</h3>
-                <p>Try another search or choose a different category.</p>
+                <h3>
+                  {activePage === 'saved'
+                    ? 'No saved tools yet'
+                    : activePage === 'recent'
+                      ? 'No recently used tools yet'
+                      : 'No tools found'}
+                </h3>
+                <p>
+                  {activePage === 'saved'
+                    ? 'Save tools by tapping the heart on any tool card.'
+                    : activePage === 'recent'
+                      ? 'Tools you open will appear here automatically.'
+                      : 'Try another search or choose a different category.'}
+                </p>
                 <button
                   onClick={() => {
                     setSearch('');
                     setActiveCategory('All Tools');
+                    setActivePage('discover');
                   }}
                 >
                   Show all tools

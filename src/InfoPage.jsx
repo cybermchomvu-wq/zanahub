@@ -50,7 +50,7 @@ const pageContent = {
       },
       {
         title: 'How tools process your content',
-        text: 'AI writing, summarising and translation requests are sent to our backend, which forwards the submitted prompt to Google Gemini to generate a result. AI image-generation prompts are forwarded to Hugging Face. These external providers process submitted inputs to provide the requested output and may handle them under their own terms and privacy policies. Avoid submitting confidential or sensitive information.',
+        text: 'AI writing, summarising and translation requests are sent to our backend, which forwards the submitted prompt to Google Gemini to generate a result. AI image-generation prompts are sent to our backend, which forwards them to Cloudflare Workers AI to generate an image. These external providers process submitted inputs to provide the requested output and may handle them under their own terms and privacy policies. Avoid submitting confidential or sensitive information.',
       },
       {
         title: 'Cookies and local storage',

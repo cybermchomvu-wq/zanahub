@@ -53,3 +53,6 @@ backend/*.sqlite-backup.js
 backend/database.js.before-ip-fix
 backend/database.js.backup*
 .env*
+
+# Local project backups - never deploy
+backups/

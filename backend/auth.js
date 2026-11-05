@@ -34,7 +34,7 @@ function createToken(userId) {
   );
 }
 
-function requireAuth(req, res, next) {
+export function requireAuth(req, res, next) {
   const authorization = req.headers.authorization || '';
   const [scheme, token] = authorization.split(' ');
 

@@ -1,0 +1,269 @@
+@keyframes zana-welcome-screen-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes zana-welcome-screen-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes zana-welcome-logo-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.68) translateY(14px);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.06) translateY(-2px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes zana-welcome-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+@keyframes zana-welcome-text-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes zana-welcome-ring {
+  0% { transform: scale(0.86); opacity: 0.12; }
+  50% { opacity: 0.5; }
+  100% { transform: scale(1.14); opacity: 0.12; }
+}
+
+@keyframes zana-welcome-dot {
+  0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-4px); }
+}
+
+.native-welcome-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  width: 100%;
+  min-height: 100%;
+  padding:
+    max(24px, env(safe-area-inset-top))
+    24px
+    max(24px, env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  color: #fff;
+  background:
+    radial-gradient(ellipse at 50% 42%, rgba(103, 45, 190, 0.22), transparent 48%),
+    linear-gradient(145deg, #090711 0%, #100a20 54%, #080711 100%);
+  font-family: Inter, "Segoe UI", system-ui, sans-serif;
+  text-align: center;
+  isolation: isolate;
+  animation:
+    zana-welcome-screen-in 0.45s ease-out both,
+    zana-welcome-screen-out 0.45s ease-in 4.55s forwards;
+}
+
+.native-welcome-glow {
+  position: absolute;
+  z-index: -1;
+  width: 65vw;
+  height: 65vw;
+  max-width: 360px;
+  max-height: 360px;
+  border-radius: 50%;
+  filter: blur(75px);
+  pointer-events: none;
+}
+
+.native-welcome-glow-one {
+  top: 9%;
+  left: -24%;
+  background: rgba(116, 53, 255, 0.16);
+}
+
+.native-welcome-glow-two {
+  right: -24%;
+  bottom: 8%;
+  background: rgba(39, 115, 255, 0.13);
+}
+
+.native-welcome-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 360px;
+  min-width: 0;
+}
+
+.native-welcome-icon-area {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 186px;
+  height: 186px;
+  margin-bottom: 28px;
+}
+
+.native-welcome-ring {
+  position: absolute;
+  inset: 9px;
+  border: 1px solid rgba(177, 126, 255, 0.28);
+  border-radius: 38px;
+  transform: rotate(45deg);
+  animation: zana-welcome-ring 2.2s ease-in-out infinite;
+}
+
+.native-welcome-ring-two {
+  inset: 25px;
+  border-color: rgba(103, 151, 255, 0.25);
+  animation-delay: 0.5s;
+}
+
+.native-welcome-icon-frame {
+  display: grid;
+  place-items: center;
+  width: 112px;
+  height: 112px;
+  padding: 14px;
+  border: 1px solid rgba(196, 166, 255, 0.38);
+  border-radius: 30px;
+  background: linear-gradient(
+    145deg,
+    rgba(151, 94, 255, 0.2),
+    rgba(38, 41, 91, 0.3)
+  );
+  box-shadow:
+    0 0 35px rgba(133, 76, 255, 0.2),
+    inset 0 0 20px rgba(165, 119, 255, 0.08);
+  animation:
+    zana-welcome-logo-in 0.85s cubic-bezier(0.2, 0.8, 0.2, 1) both,
+    zana-welcome-float 2.4s ease-in-out 0.9s infinite;
+}
+
+.native-welcome-icon {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.native-welcome-title {
+  margin: 0;
+  color: #fff;
+  font-size: clamp(29px, 8vw, 36px);
+  font-weight: 800;
+  letter-spacing: 0.24em;
+  line-height: 1.25;
+  padding-left: 0.24em;
+  text-shadow: 0 0 28px rgba(165, 105, 255, 0.3);
+  animation: zana-welcome-text-in 0.65s ease-out 0.28s both;
+}
+
+.native-welcome-divider {
+  width: 46px;
+  height: 3px;
+  margin: 22px auto 17px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #9b63ff, #6ca8ff);
+  box-shadow: 0 0 15px rgba(149, 100, 255, 0.52);
+  animation: zana-welcome-text-in 0.6s ease-out 0.45s both;
+}
+
+.native-welcome-credit {
+  margin: 0;
+  color: #a6a0bc;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.17em;
+  line-height: 1.8;
+  animation: zana-welcome-text-in 0.65s ease-out 0.55s both;
+}
+
+.native-welcome-credit strong {
+  display: block;
+  margin-top: 5px;
+  color: #e0d0ff;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.native-welcome-loader {
+  display: flex;
+  justify-content: center;
+  gap: 7px;
+  margin-top: 42px;
+}
+
+.native-welcome-loader span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #bca2ff;
+  animation: zana-welcome-dot 1s ease-in-out infinite;
+}
+
+.native-welcome-loader span:nth-child(2) { animation-delay: 0.15s; }
+.native-welcome-loader span:nth-child(3) { animation-delay: 0.3s; }
+
+@media (max-width: 380px) {
+  .native-welcome-icon-area {
+    width: 158px;
+    height: 158px;
+    margin-bottom: 22px;
+  }
+
+  .native-welcome-icon-frame {
+    width: 98px;
+    height: 98px;
+    border-radius: 26px;
+  }
+
+  .native-welcome-title {
+    letter-spacing: 0.18em;
+    padding-left: 0.18em;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .native-welcome-screen,
+  .native-welcome-ring,
+  .native-welcome-icon-frame,
+  .native-welcome-title,
+  .native-welcome-divider,
+  .native-welcome-credit,
+  .native-welcome-loader span {
+    animation: none !important;
+  }
+}
+
+
+/* Native Android welcome loading message */
+.native-welcome-loading {
+  margin: 14px 0 0;
+  color: #a6a0bc;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  animation: zana-welcome-text-in 0.65s ease-out 0.8s both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .native-welcome-loading {
+    animation: none !important;
+  }
+}

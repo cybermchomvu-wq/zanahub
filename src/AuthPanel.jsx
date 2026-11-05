@@ -1,14 +1,16 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Eye, EyeOff, ShieldCheck, ArrowRight } from 'lucide-react';
-import GoogleSignIn from './GoogleSignIn';
 
 const API_BASE = (
-  import.meta.env.VITE_API_URL || 'https://zanahub-api.onrender.com'
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.DEV
+    ? `${window.location.protocol}//${window.location.hostname}:3001`
+    : 'https://zanahub-api.onrender.com')
 ).replace(/\/$/, '');
 
-export default function AuthPanel() {
-  const [open, setOpen] = useState(false);
+export default function AuthPanel({ standalone = false } = {}) {
+  const [open, setOpen] = useState(standalone);
   const [mode, setMode] = useState('login');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -18,12 +20,42 @@ export default function AuthPanel() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const authHistoryRef = useRef(false);
+useEffect(() => {
+    function handleAuthBack(event) {
+      if (
+        authHistoryRef.current &&
+        event.state?.zanaHubAuthPanel !== true
+      ) {
+        authHistoryRef.current = false;
+        setOpen(false);
+        setError('');
+        setSuccess('');
+      }
+    }
+
+    window.addEventListener('popstate', handleAuthBack);
+
+    return () => {
+      window.removeEventListener('popstate', handleAuthBack);
+    };
+  }, []);
 
   function closePanel() {
     if (loading) return;
+
+    const shouldGoBack =
+      authHistoryRef.current &&
+      window.history.state?.zanaHubAuthPanel === true;
+
+    authHistoryRef.current = false;
     setOpen(false);
     setError('');
     setSuccess('');
+
+    if (shouldGoBack) {
+      window.history.back();
+    }
   }
 
   function changeMode(nextMode) {
@@ -112,34 +144,16 @@ export default function AuthPanel() {
     }
   }
 
-  return (
-    <>
-      <button
-        type="button"
-        className="auth-open-button"
-        onClick={() => {
-          setOpen(true);
-          setError('');
-          setSuccess('');
-        }}
-      >
-        Sign in <ArrowRight size={16} />
-      </button>
 
-      {open && createPortal(
-        <div
-          className="auth-overlay"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) closePanel();
-          }}
-        >
-          <section
-            className="auth-modal"
+  const authContent = (
+<section
+            className={`auth-modal ${standalone ? "auth-modal-standalone" : ""}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="auth-title"
           >
-            <button
+            {!standalone && (
+<button
               type="button"
               className="auth-close-button"
               aria-label="Close sign-in window"
@@ -148,6 +162,7 @@ export default function AuthPanel() {
             >
               <X size={21} />
             </button>
+)}
 
             <div className="auth-brand-mark">Z</div>
 
@@ -280,22 +295,60 @@ export default function AuthPanel() {
               </button>
             </div>
 
-            <div className="auth-divider">
-              <span>OR CONTINUE WITH</span>
-            </div>
-
-            <div className="auth-google-wrap">
-              <GoogleSignIn />
-            </div>
 
             <p className="auth-security-note">
               <ShieldCheck size={15} />
               Your password is securely handled by ZanaHub's server.
             </p>
           </section>
-        </div>,
-        document.body
+  );
+
+  return (
+    <>
+      {!standalone && (
+<button
+        type="button"
+        className="auth-open-button"
+        onClick={() => {
+          if (!open) {
+            const currentState = window.history.state || {};
+
+            window.history.pushState(
+              { ...currentState, zanaHubAuthPanel: true },
+              '',
+              window.location.href,
+            );
+
+            authHistoryRef.current = true;
+          }
+
+          setOpen(true);
+          setError('');
+          setSuccess('');
+        }}
+      >
+        Sign in <ArrowRight size={16} />
+      </button>
+      )}
+
+      {open && (
+        standalone ? (
+          <div className="auth-standalone-screen">
+            {authContent}
+          </div>
+        ) : createPortal(
+          <div
+            className="auth-overlay"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) closePanel();
+            }}
+          >
+            {authContent}
+          </div>,
+          document.body
+        )
       )}
     </>
   );
+
 }

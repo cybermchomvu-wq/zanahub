@@ -1,0 +1,309 @@
+
+/* ZanaHub responsive improvements for phones and narrow screens */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+img,
+video,
+canvas {
+  max-width: 100%;
+}
+
+button,
+input,
+select,
+textarea {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.main-content,
+.page-content,
+.info-page {
+  min-width: 0;
+}
+
+@media (max-width: 600px) {
+  .main-content,
+  .page-content,
+  .page-content > *,
+  .page-content section {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .page-content {
+    overflow-x: hidden;
+  }
+
+  /* Keep the top navigation from forcing the page wider than the phone. */
+  .topbar {
+    min-width: 0;
+    gap: 8px;
+  }
+
+  .breadcrumb {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .topbar-right {
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: 58%;
+    gap: 7px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .status-indicator {
+    display: none;
+  }
+
+  .account-area,
+  .account-name {
+    min-width: 0;
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .account-name span {
+    max-width: 115px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Search and headings must shrink instead of overflowing. */
+  .hero-search {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .hero-search input {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .section-heading {
+    min-width: 0;
+    gap: 10px;
+  }
+
+  .section-heading > *,
+  .tool-card,
+  .card-bottom,
+  .premium-copy {
+    min-width: 0;
+  }
+
+  /* Ensure controls fit, and let action rows wrap when necessary. */
+  .page-content button,
+  .page-content input,
+  .page-content select,
+  .page-content textarea,
+  .auth-modal button,
+  .auth-modal input {
+    max-width: 100%;
+  }
+
+  .page-content button {
+    overflow-wrap: anywhere;
+  }
+
+  .card-bottom,
+  .premium-action,
+  .footer-links,
+  .ai-input-footer,
+  .ai-image-result-footer,
+  .resizer-result {
+    min-width: 0;
+    flex-wrap: wrap;
+  }
+
+  .open-tool {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  .mobile-categories {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .tools-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tool-card h3,
+  .tool-card > p,
+  .tool-category {
+    overflow-wrap: anywhere;
+  }
+
+  /* Common tool page layouts. */
+  [class$="-page"],
+  [class$="-panel"],
+  [class$="-workspace"],
+  [class$="-form"],
+  [class$="-settings"],
+  [class$="-preview"],
+  [class$="-toolbar"],
+  [class$="-actions"],
+  [class$="-buttons"],
+  [class$="-footer"] {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  [class$="-page"] button,
+  [class$="-panel"] button,
+  [class$="-workspace"] button,
+  [class$="-actions"] button,
+  [class$="-buttons"] button,
+  [class$="-footer"] button {
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  [class$="-actions"],
+  [class$="-buttons"] {
+    flex-wrap: wrap;
+    align-items: stretch;
+  }
+
+  /* Keep login and registration inside the usable viewport. */
+  .auth-overlay {
+    padding: 16px;
+    overflow-y: auto;
+  }
+
+  .auth-modal {
+    width: 100%;
+    max-width: 430px;
+    min-width: 0;
+    max-height: calc(100vh - 32px);
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .auth-form,
+  .auth-password-wrap {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .auth-form input,
+  .auth-password-wrap input {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .footer-links {
+    gap: 8px 12px;
+  }
+
+  .footer-links button {
+    white-space: normal;
+  }
+}
+
+/* On very narrow phones, prioritize readable tool cards. */
+@media (max-width: 380px) {
+  .tools-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tool-card {
+    min-height: 0;
+  }
+
+  .topbar {
+    padding-right: 10px;
+    padding-left: 10px;
+  }
+
+  .page-content {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+}
+
+/* Android edge-to-edge layout: WhatsApp-style status bar */
+html.native-app,
+html.native-app body,
+html.native-app #root {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 100%;
+  margin: 0;
+  border: 0;
+  background: #0b0b14;
+}
+
+html.native-app #root {
+  min-height: 100dvh;
+  box-sizing: border-box;
+}
+
+html.native-app .main-content {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 100dvh;
+  margin-left: 0;
+
+  /* Same dark colour behind the transparent status bar. */
+  background: #0b0b14;
+
+  /* Start content below the status bar without an extra gap. */
+  padding-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+
+  /* Respect the phone's side and bottom safe areas too. */
+  padding-right: var(--safe-area-inset-right, env(safe-area-inset-right, 0px));
+  padding-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+  padding-left: var(--safe-area-inset-left, env(safe-area-inset-left, 0px));
+
+  box-sizing: border-box;
+}
+
+html.native-app .topbar {
+  background: #0b0b14;
+  box-shadow: none;
+}
+
+html.native-app .page-content {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* Keep the dedicated Android login screen below the status bar. */
+html.native-app .auth-standalone-screen {
+  padding-top: max(
+    var(--safe-area-inset-top, env(safe-area-inset-top, 0px)),
+    12px
+  );
+}

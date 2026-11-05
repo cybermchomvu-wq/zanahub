@@ -10,6 +10,8 @@ import {
 } from 'lucide-react';
 import './AIImageGenerator.css';
 
+const API_BASE = (import.meta.env.VITE_API_URL || 'https://zanahub-api.onrender.com').replace(/\/$/, '');
+
 const styles = [
   'Realistic',
   'Anime',
@@ -61,7 +63,7 @@ export default function AIImageGenerator({ onBack }) {
     setImage('');
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.hostname}:3001`}/api/ai/image`, {
+      const response = await fetch(`${API_BASE}/api/ai/image`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('zanahub_token') || ''}`,

@@ -4,7 +4,8 @@ import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import { GoogleGenAI } from '@google/genai';
 import db from './database.js';
-import { registerAuthRoutes } from './auth.js';
+import { registerAuthRoutes, requireAuth } from './auth.js';
+import { registerWorkspaceRoutes } from './workspace.js';
 import { registerMediaRoutes } from './media.js';
 
 const app = express();
@@ -38,6 +39,7 @@ app.use(cors({
 app.use(express.json({ limit: '1mb' }));
 
 registerAuthRoutes(app, db);
+registerWorkspaceRoutes(app, db, requireAuth);
 registerMediaRoutes(app);
 
 const aiLimiter = rateLimit({
