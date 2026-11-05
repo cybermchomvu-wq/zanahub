@@ -35,6 +35,7 @@ import './App.css';
 import VisitorCounter from './VisitorCounter';
 import InfoPage from './InfoPage';
 import AIChatbot from './AIChatbot';
+import MathMaster from './MathMaster';
 import AIWritingAssistant from './AIWritingAssistant';
 import AISummarizer from './AISummarizer';
 import AITranslator from './AITranslator';
@@ -44,6 +45,7 @@ import BackgroundRemover from './BackgroundRemover';
 import PDFMerger from './PDFMerger';
 import PDFSplitter from './PDFSplitter';
 import ImageResizer from './ImageResizer';
+import AIImageUpscaler from './AIImageUpscaler';
 import ImageConverter from './ImageConverter';
 import WebMToMP4 from './WebMToMP4';
 import PassportPhotoMaker from './PassportPhotoMaker';
@@ -82,6 +84,15 @@ const categories = [
 ];
 
 const tools = [
+  {
+    name: 'MathMaster',
+    description: 'Solve mathematics questions with detailed AI-powered steps and explanations.',
+    category: 'Education',
+    icon: Calculator,
+    color: 'violet',
+    tag: 'AI',
+    premium: false,
+  },
   {
     name: 'AI Chatbot',
     description: 'Chat with AI, ask questions, and explore ideas.',
@@ -179,6 +190,15 @@ const tools = [
     icon: Image,
     color: 'violet',
     tag: 'NEW',
+    premium: false,
+  },
+  {
+    name: 'AI Image Upscaler',
+    description: 'Enlarge images 2× or 4× with high-quality browser processing.',
+    category: 'Image Tools',
+    icon: Image,
+    color: 'violet',
+    tag: 'FREE',
     premium: false,
   },
   {
@@ -385,6 +405,7 @@ const tools = [
 
 
 const routableTools = new Set([
+  'MathMaster',
   'AI Chatbot',
   'AI Summarizer',
   'AI Writing Assistant',
@@ -405,6 +426,7 @@ const routableTools = new Set([
   'Currency Exchange',
   'Invoice Generator',
   'Receipt Generator',
+  'AI Image Upscaler',
   'Image Resizer',
   'WebM to MP4',
   'Image Converter',
@@ -921,6 +943,14 @@ function App() {
       return;
     }
 
+    if (tool.name === 'MathMaster') {
+      setNotice('');
+      setActiveTool('MathMaster');
+      setMenuOpen(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
     if (tool.name === 'Scientific Calculator') {
       setNotice('');
       setActiveTool('Scientific Calculator');
@@ -1002,6 +1032,13 @@ function App() {
     if (tool.name === 'AI Writing Assistant') {
       setNotice('');
       setActiveTool('AI Writing Assistant');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    if (tool.name === 'AI Image Upscaler') {
+      setNotice('');
+      setActiveTool('AI Image Upscaler');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
@@ -1477,6 +1514,8 @@ function App() {
             <JSONFormatter onBack={goBack} />
           ) : activeTool === 'Profit Calculator' ? (
             <ProfitCalculator onBack={goBack} />
+          ) : activeTool === 'MathMaster' ? (
+            <MathMaster onBack={goBack} />
           ) : activeTool === 'Scientific Calculator' ? (
             <ScientificCalculator onBack={goBack} />
           ) : activeTool === 'Notes Generator' ? (
@@ -1517,6 +1556,8 @@ function App() {
             <WebMToMP4 onBack={goBack} />
           ) : activeTool === 'Image Converter' ? (
             <ImageConverter onBack={goBack} />
+          ) : activeTool === 'AI Image Upscaler' ? (
+            <AIImageUpscaler onBack={goBack} />
           ) : activeTool === 'Image Resizer' ? (
             <ImageResizer onBack={goBack} />
           ) : activeTool === 'PDF Merger' ? (

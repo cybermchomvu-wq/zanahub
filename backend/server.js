@@ -265,6 +265,90 @@ app.post('/api/ai/chat', aiLimiter, async (req, res) => {
 
 
 
+
+app.post('/api/ai/math', aiLimiter, async (req, res) => {
+  try {
+    if (!process.env.GEMINI_API_KEY) {
+      return res.status(503).json({
+        error: 'MathMaster AI is not configured yet.',
+      });
+    }
+
+    const { messages } = req.body || {};
+
+    if (!Array.isArray(messages) || messages.length === 0 || messages.length > 30) {
+      return res.status(400).json({
+        error: 'Send a valid mathematics question to continue.',
+      });
+    }
+
+    const validMessages = messages.every(
+      (message) =>
+        message &&
+        ['user', 'assistant'].includes(message.role) &&
+        typeof message.content === 'string' &&
+        message.content.trim().length > 0 &&
+        message.content.length <= 5000
+    );
+
+    if (!validMessages || messages[messages.length - 1].role !== 'user') {
+      return res.status(400).json({
+        error: 'Please send a valid mathematics question.',
+      });
+    }
+
+    const conversation = messages.map((message) => ({
+      role: message.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: message.content.trim() }],
+    }));
+
+    const ai = new GoogleGenAI({
+      apiKey: process.env.GEMINI_API_KEY,
+    });
+
+    const response = await ai.models.generateContent({
+      model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
+      contents: conversation,
+      config: {
+        systemInstruction:
+          'You are MathMaster, the mathematics specialist inside ZanaHub. ' +
+          'Help with mathematics across school, college, university and advanced topics, ' +
+          'including arithmetic, algebra, equations, geometry, trigonometry, calculus, ' +
+          'statistics, probability, matrices, vectors, number theory, logarithms, ' +
+          'sequences, series, complex numbers, and mathematical word problems. ' +
+          'Read each question carefully and identify what is being asked. ' +
+          'For a solvable problem, give the final answer and show clear, numbered, ' +
+          'step-by-step working. Explain the formulas and reasoning used. ' +
+          'Check calculations and verify the result when possible. ' +
+          'Keep mathematical notation readable in plain text and use LaTeX notation ' +
+          'where helpful. Do not invent missing information or silently assume ' +
+          'ambiguous values; state any necessary assumptions. If a question is ' +
+          'outside mathematics, politely explain that this tool specializes in math. ' +
+          'If you are uncertain about a result, say so instead of pretending it is correct. ' +
+          'Use the conversation history for relevant follow-up questions. ' +
+          'Adapt explanations to the learner and use clear, encouraging language.',
+        maxOutputTokens: 3000,
+      },
+    });
+
+    const text = response.text;
+
+    if (!text) {
+      return res.status(502).json({
+        error: 'MathMaster could not produce a solution. Please try again.',
+      });
+    }
+
+    return res.json({ text });
+  } catch (error) {
+    console.error('MathMaster request failed:', error.message);
+
+    return res.status(502).json({
+      error: 'MathMaster could not solve the question. Check the AI provider configuration and usage limits.',
+    });
+  }
+});
+
 app.post('/api/ai/image', imageLimiter, async (req, res) => {
   try {
     const accountId = process.env.CLOUDFLARE_ACCOUNT_ID?.trim();

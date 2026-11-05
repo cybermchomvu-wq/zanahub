@@ -1,0 +1,404 @@
+.mathmaster-page {
+  width: 100%;
+  min-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  color: var(--text-primary, #f4f0ff);
+  background: var(--bg-primary, #0c0b13);
+  border: 1px solid rgba(157, 111, 255, 0.13);
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.mathmaster-header {
+  min-height: 76px;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 14px 22px;
+  border-bottom: 1px solid rgba(255,255,255,.07);
+  background: rgba(255,255,255,.015);
+}
+
+.mathmaster-back,
+.mathmaster-new-button,
+.mathmaster-send {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  color: inherit;
+  border: 1px solid rgba(255,255,255,.1);
+  background: rgba(255,255,255,.045);
+  border-radius: 11px;
+}
+
+.mathmaster-back {
+  width: 39px;
+  height: 39px;
+}
+
+.mathmaster-brand-icon,
+.mathmaster-welcome-icon {
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: linear-gradient(135deg, #8c4dff, #5e70ff);
+  box-shadow: 0 5px 25px rgba(126, 74, 255, .2);
+}
+
+.mathmaster-brand-icon {
+  width: 43px;
+  height: 43px;
+  border-radius: 13px;
+}
+
+.mathmaster-heading {
+  flex: 1;
+  min-width: 0;
+}
+
+.mathmaster-heading h1 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 750;
+}
+
+.mathmaster-heading > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  color: #aaa3bc;
+  font-size: 11px;
+}
+
+.mathmaster-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #48d99a;
+  box-shadow: 0 0 9px rgba(72,217,154,.55);
+}
+
+.mathmaster-new-button {
+  padding: 10px 13px;
+  font-size: 12px;
+}
+
+.mathmaster-back:hover,
+.mathmaster-new-button:hover {
+  border-color: rgba(164, 116, 255, .6);
+  background: rgba(143, 91, 255, .12);
+}
+
+.mathmaster-content {
+  flex: 1;
+  width: 100%;
+  max-width: 900px;
+  min-height: 420px;
+  margin: 0 auto;
+  padding: 35px 28px;
+}
+
+.mathmaster-welcome {
+  max-width: 690px;
+  margin: 35px auto;
+  text-align: center;
+}
+
+.mathmaster-welcome-icon {
+  width: 65px;
+  height: 65px;
+  margin: 0 auto 22px;
+  border-radius: 20px;
+}
+
+.mathmaster-eyebrow {
+  color: #ad8aff;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 2px;
+}
+
+.mathmaster-welcome h2 {
+  margin: 13px 0 10px;
+  font-size: clamp(23px, 4vw, 34px);
+  letter-spacing: -1px;
+}
+
+.mathmaster-welcome > p {
+  max-width: 530px;
+  margin: 0 auto;
+  color: #aaa3bc;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.mathmaster-example-heading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 34px 0 13px;
+  color: #c9b3ff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.mathmaster-examples {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  text-align: left;
+}
+
+.mathmaster-examples button {
+  min-height: 53px;
+  padding: 12px 14px;
+  color: #d5cde5;
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: left;
+  cursor: pointer;
+  background: rgba(255,255,255,.035);
+  border: 1px solid rgba(255,255,255,.075);
+  border-radius: 12px;
+  transition: .2s ease;
+}
+
+.mathmaster-examples button:hover {
+  border-color: rgba(158, 111, 255, .55);
+  background: rgba(143, 91, 255, .1);
+  transform: translateY(-2px);
+}
+
+.mathmaster-conversation {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.mathmaster-message,
+.mathmaster-loading {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.mathmaster-avatar {
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  color: #d6c2ff;
+  background: rgba(142, 91, 255, .14);
+  border: 1px solid rgba(153, 111, 255, .2);
+  border-radius: 11px;
+}
+
+.mathmaster-message.user .mathmaster-avatar {
+  color: #b8caff;
+  background: rgba(85, 125, 255, .12);
+}
+
+.mathmaster-message-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.mathmaster-message-label {
+  margin: 3px 0 9px;
+  color: #bda2ff;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.mathmaster-message.user .mathmaster-message-label {
+  color: #a9c2ff;
+}
+
+.mathmaster-message-text {
+  color: #e4deef;
+  font-size: 13px;
+  line-height: 1.85;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.mathmaster-copy-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 6px 9px;
+  color: #b8a2e5;
+  font-size: 11px;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 7px;
+}
+
+.mathmaster-copy-button:hover {
+  background: rgba(143, 91, 255, .12);
+}
+
+.mathmaster-loading {
+  color: #bda2ff;
+  font-size: 12px;
+}
+
+.mathmaster-loading strong {
+  display: block;
+  margin: 3px 0 8px;
+}
+
+.mathmaster-dots {
+  display: flex;
+  gap: 5px;
+}
+
+.mathmaster-dots i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #a47aff;
+  animation: mathmaster-pulse 1s infinite alternate;
+}
+
+.mathmaster-dots i:nth-child(2) { animation-delay: .2s; }
+.mathmaster-dots i:nth-child(3) { animation-delay: .4s; }
+
+@keyframes mathmaster-pulse {
+  to { opacity: .25; transform: translateY(-3px); }
+}
+
+.mathmaster-error {
+  max-width: 900px;
+  margin: 0 auto 12px;
+  padding: 11px 14px;
+  color: #ffaaaa;
+  font-size: 12px;
+  background: rgba(255, 75, 75, .08);
+  border: 1px solid rgba(255, 90, 90, .2);
+  border-radius: 10px;
+}
+
+.mathmaster-composer {
+  display: flex;
+  align-items: flex-end;
+  gap: 11px;
+  width: calc(100% - 48px);
+  max-width: 850px;
+  margin: 0 auto;
+  padding: 13px;
+  background: rgba(255,255,255,.035);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 15px;
+}
+
+.mathmaster-input-wrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.mathmaster-input-wrap textarea {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  max-height: 150px;
+  resize: vertical;
+  padding: 8px 7px;
+  color: #f1eaff;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.6;
+  background: transparent;
+  border: 0;
+  outline: none;
+}
+
+.mathmaster-input-wrap textarea::placeholder {
+  color: #777184;
+}
+
+.mathmaster-input-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 3px 7px 0;
+  color: #777184;
+  font-size: 10px;
+}
+
+.mathmaster-send {
+  flex: 0 0 43px;
+  width: 43px;
+  height: 43px;
+  color: #fff;
+  background: linear-gradient(135deg, #9255ff, #626bff);
+  border: 0;
+}
+
+.mathmaster-send:disabled,
+.mathmaster-new-button:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+.mathmaster-disclaimer {
+  margin: 12px 10px 17px;
+  color: #777184;
+  font-size: 10px;
+  text-align: center;
+}
+
+@media (max-width: 600px) {
+  .mathmaster-page {
+    min-height: 78vh;
+    border-radius: 13px;
+  }
+
+  .mathmaster-header {
+    gap: 9px;
+    padding: 12px;
+  }
+
+  .mathmaster-brand-icon {
+    width: 38px;
+    height: 38px;
+  }
+
+  .mathmaster-new-button {
+    padding: 9px;
+  }
+
+  .mathmaster-new-button span {
+    display: none;
+  }
+
+  .mathmaster-content {
+    min-height: 390px;
+    padding: 25px 15px;
+  }
+
+  .mathmaster-welcome {
+    margin: 25px auto;
+  }
+
+  .mathmaster-examples {
+    grid-template-columns: 1fr;
+  }
+
+  .mathmaster-composer {
+    width: calc(100% - 24px);
+    padding: 9px;
+  }
+
+  .mathmaster-input-footer {
+    font-size: 9px;
+  }
+}
