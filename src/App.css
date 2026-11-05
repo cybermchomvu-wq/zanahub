@@ -3619,3 +3619,127 @@ button {
     max-height: 300px;
   }
 }
+
+
+/* Sarah's hidden love surprise */
+.sarah-surprise-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    radial-gradient(ellipse at center, rgba(104, 20, 105, 0.96), rgba(15, 8, 29, 0.99) 72%);
+  animation: sarah-overlay-in 0.45s ease both;
+}
+
+.sarah-surprise-glow {
+  position: absolute;
+  width: min(85vw, 650px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 53, 155, 0.32), transparent 68%);
+  filter: blur(12px);
+  animation: sarah-glow-pulse 1.8s ease-in-out infinite alternate;
+}
+
+.sarah-heart-scene {
+  position: relative;
+  width: min(90vw, 600px);
+  height: min(75vh, 500px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sarah-heart-scene > span {
+  position: absolute;
+  font-size: clamp(30px, 6vw, 65px);
+  filter: drop-shadow(0 0 18px rgba(255, 80, 170, 0.9));
+  animation: sarah-heart-float 2.2s ease-in-out infinite;
+}
+
+.sarah-heart-scene > span:nth-child(1) { top: 12%; left: 16%; }
+.sarah-heart-scene > span:nth-child(2) { top: 18%; right: 17%; animation-delay: -0.5s; }
+.sarah-heart-scene > span:nth-child(3) { bottom: 17%; left: 12%; animation-delay: -1s; }
+.sarah-heart-scene > span:nth-child(4) { bottom: 12%; right: 14%; animation-delay: -0.7s; }
+.sarah-heart-scene > span:nth-child(5) { top: 43%; left: 3%; animation-delay: -1.3s; }
+.sarah-heart-scene > span:nth-child(6) { top: 40%; right: 4%; animation-delay: -0.3s; }
+.sarah-heart-scene > span:nth-child(7) { top: 5%; left: 48%; animation-delay: -1.5s; }
+.sarah-heart-scene > span:nth-child(8) { bottom: 3%; left: 47%; animation-delay: -0.9s; }
+
+.sarah-heart-center {
+  color: #ff4b9b;
+  font-size: clamp(90px, 17vw, 160px);
+  text-shadow: 0 0 25px #ff4b9b, 0 0 65px #ff168a;
+  animation: sarah-heart-beat 0.85s ease-in-out infinite alternate;
+}
+
+.sarah-proposal {
+  position: relative;
+  z-index: 1;
+  width: 90%;
+  text-align: center;
+  animation: sarah-proposal-in 0.8s cubic-bezier(.2,.8,.2,1) both;
+}
+
+.sarah-proposal h2 {
+  margin: 22px 0;
+  color: #fff;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(30px, 7vw, 66px);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -2px;
+  text-shadow:
+    0 0 12px #ff64b4,
+    0 0 30px #ff168a,
+    0 0 65px rgba(255, 22, 138, 0.9);
+  animation: sarah-text-glow 1.3s ease-in-out infinite alternate;
+}
+
+.sarah-proposal-emojis {
+  font-size: clamp(28px, 5vw, 48px);
+  letter-spacing: 8px;
+}
+
+@keyframes sarah-overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes sarah-glow-pulse {
+  from { transform: scale(.85); opacity: .55; }
+  to { transform: scale(1.15); opacity: 1; }
+}
+
+@keyframes sarah-heart-float {
+  0%, 100% { transform: translateY(0) rotate(-8deg) scale(.9); }
+  50% { transform: translateY(-22px) rotate(8deg) scale(1.15); }
+}
+
+@keyframes sarah-heart-beat {
+  from { transform: scale(.88); }
+  to { transform: scale(1.12); }
+}
+
+@keyframes sarah-proposal-in {
+  from { opacity: 0; transform: scale(.75) translateY(25px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes sarah-text-glow {
+  from { text-shadow: 0 0 12px #ff64b4, 0 0 30px #ff168a; }
+  to { text-shadow: 0 0 22px #fff, 0 0 48px #ff168a, 0 0 80px #ff168a; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sarah-surprise-overlay *,
+  .sarah-surprise-overlay {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

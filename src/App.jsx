@@ -461,6 +461,23 @@ function App() {
   const [search, setSearch] = useState('');
   const [homeSearchOpen, setHomeSearchOpen] = useState(false);
   const homeSearchRef = useRef(null);
+  const [sarahSurprise, setSarahSurprise] = useState('');
+
+  useEffect(() => {
+    if (!sarahSurprise) return;
+
+    const timer = window.setTimeout(() => {
+      if (sarahSurprise === 'hearts') {
+        setSarahSurprise('proposal');
+      } else {
+        setSarahSurprise('');
+        setSearch('');
+        setHomeSearchOpen(false);
+      }
+    }, sarahSurprise === 'hearts' ? 3000 : 5000);
+
+    return () => window.clearTimeout(timer);
+  }, [sarahSurprise]);
 
   useEffect(() => {
     function handleHomeSearchOutsideClick(event) {
@@ -1544,12 +1561,27 @@ function App() {
                     value={search}
                     onFocus={() => setHomeSearchOpen(true)}
                     onChange={(event) => {
-                      setSearch(event.target.value);
-                      setHomeSearchOpen(true);
+                      const value = event.target.value;
+                      setSearch(value);
+
+                      if (value.trim().toLowerCase() === 'sarah') {
+                        setHomeSearchOpen(false);
+                        setSarahSurprise('hearts');
+                      } else {
+                        setHomeSearchOpen(true);
+                      }
                     }}
                     onKeyDown={(event) => {
                       if (event.key === 'Escape') {
                         setHomeSearchOpen(false);
+                      }
+
+                      if (
+                        event.key === 'Enter' &&
+                        search.trim().toLowerCase() === 'sarah'
+                      ) {
+                        event.preventDefault();
+                        return;
                       }
 
                       if (event.key === 'Enter' && homeSearchResults[0]) {
@@ -1904,6 +1936,38 @@ function App() {
           </>
           )}
         </div>
+      
+      {sarahSurprise && (
+        <div
+          className={`sarah-surprise-overlay ${sarahSurprise}`}
+          role="dialog"
+          aria-modal="true"
+          aria-label="A special surprise"
+        >
+          <div className="sarah-surprise-glow" />
+
+          {sarahSurprise === 'hearts' ? (
+            <div className="sarah-heart-scene" aria-hidden="true">
+              <span>💗</span>
+              <span>💕</span>
+              <span>❤️</span>
+              <span>💖</span>
+              <span>💘</span>
+              <span>💗</span>
+              <span>💞</span>
+              <span>❤️</span>
+              <div className="sarah-heart-center">♥</div>
+            </div>
+          ) : (
+            <div className="sarah-proposal">
+              <div className="sarah-proposal-emojis">💖 💍 💖</div>
+              <h2>WILL YOU MARRY ME?</h2>
+              <div className="sarah-proposal-emojis">🥹 ❤️ 🥰</div>
+            </div>
+          )}
+        </div>
+      )}
+
       </main>
     </div>
   );
