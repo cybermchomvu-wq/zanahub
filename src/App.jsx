@@ -1605,7 +1605,7 @@ function App() {
                       const value = event.target.value;
                       setSearch(value);
 
-                      if (value.trim().toLowerCase() === 'sarah') {
+                      if (['sarah', 'berna'].includes(value.trim().toLowerCase())) {
                         setHomeSearchOpen(false);
                         setSarahSurprise('hearts');
                       } else {
@@ -1619,7 +1619,7 @@ function App() {
 
                       if (
                         event.key === 'Enter' &&
-                        search.trim().toLowerCase() === 'sarah'
+                        ['sarah', 'berna'].includes(search.trim().toLowerCase())
                       ) {
                         event.preventDefault();
                         return;
